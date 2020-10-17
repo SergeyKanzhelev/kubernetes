@@ -51,6 +51,7 @@ import (
 	flowcontrolv1alpha1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
 	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
+	nodev1 "k8s.io/client-go/kubernetes/typed/node/v1"
 	nodev1alpha1 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
 	nodev1beta1 "k8s.io/client-go/kubernetes/typed/node/v1beta1"
 	policyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
@@ -100,6 +101,7 @@ type Interface interface {
 	NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Interface
 	NodeV1alpha1() nodev1alpha1.NodeV1alpha1Interface
 	NodeV1beta1() nodev1beta1.NodeV1beta1Interface
+	NodeV1() nodev1.NodeV1Interface
 	PolicyV1beta1() policyv1beta1.PolicyV1beta1Interface
 	RbacV1() rbacv1.RbacV1Interface
 	RbacV1beta1() rbacv1beta1.RbacV1beta1Interface
@@ -147,6 +149,7 @@ type Clientset struct {
 	networkingV1beta1            *networkingv1beta1.NetworkingV1beta1Client
 	nodeV1alpha1                 *nodev1alpha1.NodeV1alpha1Client
 	nodeV1beta1                  *nodev1beta1.NodeV1beta1Client
+	nodeV1                       *nodev1.NodeV1Client
 	policyV1beta1                *policyv1beta1.PolicyV1beta1Client
 	rbacV1                       *rbacv1.RbacV1Client
 	rbacV1beta1                  *rbacv1beta1.RbacV1beta1Client
@@ -312,6 +315,11 @@ func (c *Clientset) NodeV1alpha1() nodev1alpha1.NodeV1alpha1Interface {
 // NodeV1beta1 retrieves the NodeV1beta1Client
 func (c *Clientset) NodeV1beta1() nodev1beta1.NodeV1beta1Interface {
 	return c.nodeV1beta1
+}
+
+// NodeV1 retrieves the NodeV1Client
+func (c *Clientset) NodeV1() nodev1.NodeV1beta1Interface {
+	return c.nodeV1
 }
 
 // PolicyV1beta1 retrieves the PolicyV1beta1Client
@@ -509,6 +517,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.nodeV1, err = nodev1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.policyV1beta1, err = policyv1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -592,6 +604,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.networkingV1beta1 = networkingv1beta1.NewForConfigOrDie(c)
 	cs.nodeV1alpha1 = nodev1alpha1.NewForConfigOrDie(c)
 	cs.nodeV1beta1 = nodev1beta1.NewForConfigOrDie(c)
+	cs.nodeV1 = nodev1.NewForConfigOrDie(c)
 	cs.policyV1beta1 = policyv1beta1.NewForConfigOrDie(c)
 	cs.rbacV1 = rbacv1.NewForConfigOrDie(c)
 	cs.rbacV1beta1 = rbacv1beta1.NewForConfigOrDie(c)
@@ -641,6 +654,7 @@ func New(c rest.Interface) *Clientset {
 	cs.networkingV1beta1 = networkingv1beta1.New(c)
 	cs.nodeV1alpha1 = nodev1alpha1.New(c)
 	cs.nodeV1beta1 = nodev1beta1.New(c)
+	cs.nodeV1 = nodev1.New(c)
 	cs.policyV1beta1 = policyv1beta1.New(c)
 	cs.rbacV1 = rbacv1.New(c)
 	cs.rbacV1beta1 = rbacv1beta1.New(c)

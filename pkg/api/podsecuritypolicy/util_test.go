@@ -318,8 +318,6 @@ func TestDropRuntimeClass(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.RuntimeClass, test.featureEnabled)()
-
 			DropDisabledFields(test.pspSpec, test.oldPSPSpec)
 
 			if test.expectRuntimeClass {

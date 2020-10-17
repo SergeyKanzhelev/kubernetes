@@ -322,7 +322,7 @@ func NewObjectInterfacesForTest() admission.ObjectInterfaces {
 	return admission.NewObjectInterfacesFromScheme(scheme)
 }
 
-func newRuntimeClassForTest(runtimeClassEnabled bool,
+func newRuntimeClassForTest(
 	featureInspection bool,
 	addLister bool,
 	listerObject *v1beta1.RuntimeClass,
@@ -332,8 +332,7 @@ func newRuntimeClassForTest(runtimeClassEnabled bool,
 
 	if featureInspection {
 		relevantFeatures := map[featuregate.Feature]featuregate.FeatureSpec{
-			features.RuntimeClass: {Default: runtimeClassEnabled},
-			features.PodOverhead:  {Default: false},
+			features.PodOverhead: {Default: false},
 		}
 		fg := featuregate.NewFeatureGate()
 		fg.Add(relevantFeatures)
@@ -514,7 +513,6 @@ func TestValidate(t *testing.T) {
 		},
 	}
 	rt := NewRuntimeClass()
-	rt.runtimeClassEnabled = true
 	rt.podOverheadEnabled = true
 	o := NewObjectInterfacesForTest()
 	for _, tc := range tests {

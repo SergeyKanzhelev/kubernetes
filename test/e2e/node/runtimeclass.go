@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	nodev1beta1 "k8s.io/api/node/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeclasstest "k8s.io/kubernetes/pkg/kubelet/runtimeclass/testing"
@@ -38,7 +37,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 	f := framework.NewDefaultFramework("runtimeclass")
 
 	ginkgo.It("should reject a Pod requesting a RuntimeClass with conflicting node selector", func() {
-		scheduling := &nodev1beta1.Scheduling{
+		scheduling := &nodev1.Scheduling{
 			NodeSelector: map[string]string{
 				"foo": "conflict",
 			},

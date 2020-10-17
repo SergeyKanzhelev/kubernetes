@@ -21,8 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"k8s.io/api/core/v1"
-	nodev1beta1 "k8s.io/api/node/v1beta1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
 	"k8s.io/kubernetes/test/e2e/framework"

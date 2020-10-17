@@ -39,7 +39,6 @@ import (
 	"k8s.io/component-base/featuregate"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	node "k8s.io/kubernetes/pkg/apis/node"
-	nodev1beta1 "k8s.io/kubernetes/pkg/apis/node/v1beta1"
 	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/util/tolerations"
 )
@@ -63,9 +62,8 @@ type RuntimeClass struct {
 	runtimeClassLister nodev1beta1listers.RuntimeClassLister
 	runtimeClassClient nodev1beta1client.RuntimeClassInterface
 
-	inspectedFeatures   bool
-	runtimeClassEnabled bool
-	podOverheadEnabled  bool
+	inspectedFeatures  bool
+	podOverheadEnabled bool
 }
 
 var _ admission.MutationInterface = &RuntimeClass{}
@@ -81,16 +79,12 @@ func (r *RuntimeClass) SetExternalKubeClientSet(client kubernetes.Interface) {
 
 // InspectFeatureGates allows setting bools without taking a dep on a global variable
 func (r *RuntimeClass) InspectFeatureGates(featureGates featuregate.FeatureGate) {
-	r.runtimeClassEnabled = featureGates.Enabled(features.RuntimeClass)
 	r.podOverheadEnabled = featureGates.Enabled(features.PodOverhead)
 	r.inspectedFeatures = true
 }
 
 // SetExternalKubeInformerFactory implements the WantsExternalKubeInformerFactory interface.
 func (r *RuntimeClass) SetExternalKubeInformerFactory(f informers.SharedInformerFactory) {
-	if !r.runtimeClassEnabled {
-		return
-	}
 	runtimeClassInformer := f.Node().V1beta1().RuntimeClasses()
 	r.SetReadyFunc(runtimeClassInformer.Informer().HasSynced)
 	r.runtimeClassLister = runtimeClassInformer.Lister()
@@ -100,9 +94,6 @@ func (r *RuntimeClass) SetExternalKubeInformerFactory(f informers.SharedInformer
 func (r *RuntimeClass) ValidateInitialization() error {
 	if !r.inspectedFeatures {
 		return fmt.Errorf("InspectFeatureGates was not called")
-	}
-	if !r.runtimeClassEnabled {
-		return nil
 	}
 	if r.runtimeClassLister == nil {
 		return fmt.Errorf("missing RuntimeClass lister")
@@ -115,10 +106,6 @@ func (r *RuntimeClass) ValidateInitialization() error {
 
 // Admit makes an admission decision based on the request attributes
 func (r *RuntimeClass) Admit(ctx context.Context, attributes admission.Attributes, o admission.ObjectInterfaces) error {
-	if !r.runtimeClassEnabled {
-		return nil
-	}
-
 	// Ignore all calls to subresources or resources other than pods.
 	if shouldIgnore(attributes) {
 		return nil
@@ -143,10 +130,6 @@ func (r *RuntimeClass) Admit(ctx context.Context, attributes admission.Attribute
 
 // Validate makes sure that pod adhere's to RuntimeClass's definition
 func (r *RuntimeClass) Validate(ctx context.Context, attributes admission.Attributes, o admission.ObjectInterfaces) error {
-	if !r.runtimeClassEnabled {
-		return nil
-	}
-
 	// Ignore all calls to subresources or resources other than pods.
 	if shouldIgnore(attributes) {
 		return nil
@@ -204,7 +187,7 @@ func setOverhead(a admission.Attributes, pod *api.Pod, runtimeClass *v1beta1.Run
 
 	// convert to internal type and assign to pod's Overhead
 	nodeOverhead := &node.Overhead{}
-	if err = nodev1beta1.Convert_v1beta1_Overhead_To_node_Overhead(runtimeClass.Overhead, nodeOverhead, nil); err != nil {
+	if err = nodev1.Convert_v1beta1_Overhead_To_node_Overhead(runtimeClass.Overhead, nodeOverhead, nil); err != nil {
 		return err
 	}
 
@@ -225,7 +208,7 @@ func setScheduling(a admission.Attributes, pod *api.Pod, runtimeClass *v1beta1.R
 
 	// convert to internal type and assign to pod's Scheduling
 	nodeScheduling := &node.Scheduling{}
-	if err = nodev1beta1.Convert_v1beta1_Scheduling_To_node_Scheduling(runtimeClass.Scheduling, nodeScheduling, nil); err != nil {
+	if err = nodev1.Convert_v1beta1_Scheduling_To_node_Scheduling(runtimeClass.Scheduling, nodeScheduling, nil); err != nil {
 		return err
 	}
 
@@ -254,7 +237,7 @@ func validateOverhead(a admission.Attributes, pod *api.Pod, runtimeClass *v1beta
 	if runtimeClass != nil && runtimeClass.Overhead != nil {
 		// If the Overhead set doesn't match what is provided in the RuntimeClass definition, reject the pod
 		nodeOverhead := &node.Overhead{}
-		if err := nodev1beta1.Convert_v1beta1_Overhead_To_node_Overhead(runtimeClass.Overhead, nodeOverhead, nil); err != nil {
+		if err := nodev1.Convert_v1beta1_Overhead_To_node_Overhead(runtimeClass.Overhead, nodeOverhead, nil); err != nil {
 			return err
 		}
 		if !apiequality.Semantic.DeepEqual(nodeOverhead.PodFixed, pod.Spec.Overhead) {

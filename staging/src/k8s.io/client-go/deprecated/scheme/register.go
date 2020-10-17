@@ -96,6 +96,7 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	networkingv1beta1.AddToScheme,
 	nodev1alpha1.AddToScheme,
 	nodev1beta1.AddToScheme,
+	nodev1.AddToScheme,
 	policyv1beta1.AddToScheme,
 	rbacv1.AddToScheme,
 	rbacv1beta1.AddToScheme,

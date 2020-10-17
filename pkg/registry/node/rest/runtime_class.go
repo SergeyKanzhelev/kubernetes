@@ -17,8 +17,7 @@ limitations under the License.
 package rest
 
 import (
-	nodev1alpha1 "k8s.io/api/node/v1alpha1"
-	nodev1beta1 "k8s.io/api/node/v1beta1"
+	nodev1 "k8s.io/api/node/v1"
 	"k8s.io/apiserver/pkg/registry/generic"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -35,19 +34,19 @@ type RESTStorageProvider struct{}
 func (p RESTStorageProvider) NewRESTStorage(apiResourceConfigSource serverstorage.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool, error) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(nodeinternal.GroupName, legacyscheme.Scheme, legacyscheme.ParameterCodec, legacyscheme.Codecs)
 
-	if apiResourceConfigSource.VersionEnabled(nodev1alpha1.SchemeGroupVersion) {
+	if apiResourceConfigSource.VersionEnabled(nodev1.SchemeGroupVersion) {
 		if storageMap, err := p.v1alpha1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
 			return genericapiserver.APIGroupInfo{}, false, err
 		} else {
-			apiGroupInfo.VersionedResourcesStorageMap[nodev1alpha1.SchemeGroupVersion.Version] = storageMap
+			apiGroupInfo.VersionedResourcesStorageMap[nodev1.SchemeGroupVersion.Version] = storageMap
 		}
 	}
 
-	if apiResourceConfigSource.VersionEnabled(nodev1beta1.SchemeGroupVersion) {
+	if apiResourceConfigSource.VersionEnabled(nodev1.SchemeGroupVersion) {
 		if storageMap, err := p.v1beta1Storage(apiResourceConfigSource, restOptionsGetter); err != nil {
 			return genericapiserver.APIGroupInfo{}, false, err
 		} else {
-			apiGroupInfo.VersionedResourcesStorageMap[nodev1beta1.SchemeGroupVersion.Version] = storageMap
+			apiGroupInfo.VersionedResourcesStorageMap[nodev1.SchemeGroupVersion.Version] = storageMap
 		}
 	}
 

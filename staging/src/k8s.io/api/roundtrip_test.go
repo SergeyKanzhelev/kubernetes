@@ -49,6 +49,7 @@ import (
 	imagepolicyv1alpha1 "k8s.io/api/imagepolicy/v1alpha1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	nodev1 "k8s.io/api/node/v1"
 	nodev1alpha1 "k8s.io/api/node/v1alpha1"
 	nodev1beta1 "k8s.io/api/node/v1beta1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -102,6 +103,7 @@ var groups = []runtime.SchemeBuilder{
 	networkingv1beta1.SchemeBuilder,
 	nodev1alpha1.SchemeBuilder,
 	nodev1beta1.SchemeBuilder,
+	nodev1.SchemeBuilder,
 	policyv1beta1.SchemeBuilder,
 	rbacv1alpha1.SchemeBuilder,
 	rbacv1beta1.SchemeBuilder,

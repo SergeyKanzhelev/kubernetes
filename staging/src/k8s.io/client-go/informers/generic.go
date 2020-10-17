@@ -268,6 +268,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case nodev1beta1.SchemeGroupVersion.WithResource("runtimeclasses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1beta1().RuntimeClasses().Informer()}, nil
 
+		// Group=node.k8s.io, Version=v1
+	case nodev1.SchemeGroupVersion.WithResource("runtimeclasses"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1().RuntimeClasses().Informer()}, nil
+
 		// Group=policy, Version=v1beta1
 	case policyv1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1beta1().PodDisruptionBudgets().Informer()}, nil
