@@ -23,12 +23,12 @@ import (
 	time "time"
 
 	nodev1 "k8s.io/api/node/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	kubernetes "k8s.io/client-go/kubernetes"
-	v1listers "k8s.io/client-go/listers/node/v1"
+	v1 "k8s.io/client-go/listers/node/v1"
 	cache "k8s.io/client-go/tools/cache"
 )
 
@@ -36,7 +36,7 @@ import (
 // RuntimeClasses.
 type RuntimeClassInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1listers.RuntimeClassLister
+	Lister() v1.RuntimeClassLister
 }
 
 type runtimeClassInformer struct {
@@ -57,13 +57,13 @@ func NewRuntimeClassInformer(client kubernetes.Interface, resyncPeriod time.Dura
 func NewFilteredRuntimeClassInformer(client kubernetes.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
 				return client.NodeV1().RuntimeClasses().List(context.TODO(), options)
 			},
-			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
@@ -84,6 +84,6 @@ func (f *runtimeClassInformer) Informer() cache.SharedIndexInformer {
 	return f.factory.InformerFor(&nodev1.RuntimeClass{}, f.defaultInformer)
 }
 
-func (f *runtimeClassInformer) Lister() v1listers.RuntimeClassLister {
-	return v1listers.NewRuntimeClassLister(f.Informer().GetIndexer())
+func (f *runtimeClassInformer) Lister() v1.RuntimeClassLister {
+	return v1.NewRuntimeClassLister(f.Informer().GetIndexer())
 }
