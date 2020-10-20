@@ -136,6 +136,8 @@ go_library(
         "//staging/src/k8s.io/client-go/discovery:go_default_library",
         "//staging/src/k8s.io/client-go/discovery/fake:go_default_library",
         "//staging/src/k8s.io/client-go/testing:go_default_library",
+        "//vendor/k8s.io/client-go/deprecated/typed/node/v1:go_default_library",
+        "//vendor/k8s.io/client-go/deprecated/typed/node/v1/fake:go_default_library",
     ],
 )
 

@@ -47,6 +47,7 @@ import (
 	flowcontrolv1alpha1 "k8s.io/client-go/deprecated/typed/flowcontrol/v1alpha1"
 	networkingv1 "k8s.io/client-go/deprecated/typed/networking/v1"
 	networkingv1beta1 "k8s.io/client-go/deprecated/typed/networking/v1beta1"
+	nodev1 "k8s.io/client-go/deprecated/typed/node/v1"
 	nodev1alpha1 "k8s.io/client-go/deprecated/typed/node/v1alpha1"
 	nodev1beta1 "k8s.io/client-go/deprecated/typed/node/v1beta1"
 	policyv1beta1 "k8s.io/client-go/deprecated/typed/policy/v1beta1"

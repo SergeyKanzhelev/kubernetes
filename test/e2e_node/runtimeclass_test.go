@@ -104,14 +104,14 @@ var _ = framework.KubeDescribe("Kubelet PodOverhead handling [LinuxOnly]", func(
 				)
 				ginkgo.By("Creating a RuntimeClass with Overhead definied", func() {
 					handler = e2enode.PreconfiguredRuntimeClassHandler(framework.TestContext.ContainerRuntime)
-					rc := &nodev1beta1.RuntimeClass{
+					rc := &nodev1.RuntimeClass{
 						ObjectMeta: metav1.ObjectMeta{Name: handler},
 						Handler:    handler,
-						Overhead: &nodev1beta1.Overhead{
+						Overhead: &nodev1.Overhead{
 							PodFixed: getResourceList("200m", "140Mi"),
 						},
 					}
-					_, err := f.ClientSet.NodeV1beta1().RuntimeClasses().Create(context.TODO(), rc, metav1.CreateOptions{})
+					_, err := f.ClientSet.NodeV1().RuntimeClasses().Create(context.TODO(), rc, metav1.CreateOptions{})
 					framework.ExpectNoError(err, "failed to create RuntimeClass resource")
 				})
 				ginkgo.By("Creating a Guaranteed pod with which has Overhead defined", func() {
