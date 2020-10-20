@@ -101,7 +101,7 @@ type Interface interface {
 	NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Interface
 	NodeV1alpha1() nodev1alpha1.NodeV1alpha1Interface
 	NodeV1beta1() nodev1beta1.NodeV1beta1Interface
-	NodeV1() nodev1beta1.NodeV1Interface
+	NodeV1() nodev1.NodeV1Interface
 	PolicyV1beta1() policyv1beta1.PolicyV1beta1Interface
 	RbacV1() rbacv1.RbacV1Interface
 	RbacV1beta1() rbacv1beta1.RbacV1beta1Interface
