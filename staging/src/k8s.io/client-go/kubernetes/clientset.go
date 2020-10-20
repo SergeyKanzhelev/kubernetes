@@ -318,7 +318,7 @@ func (c *Clientset) NodeV1beta1() nodev1beta1.NodeV1beta1Interface {
 }
 
 // NodeV1 retrieves the NodeV1Client
-func (c *Clientset) NodeV1() nodev1.NodeV1beta1Interface {
+func (c *Clientset) NodeV1() nodev1.NodeV1Interface {
 	return c.nodeV1
 }
 
