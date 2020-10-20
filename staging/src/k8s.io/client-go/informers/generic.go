@@ -46,6 +46,7 @@ import (
 	flowcontrolv1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	nodev1 "k8s.io/api/node/v1"
 	nodev1alpha1 "k8s.io/api/node/v1alpha1"
 	nodev1beta1 "k8s.io/api/node/v1beta1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -260,6 +261,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case networkingv1beta1.SchemeGroupVersion.WithResource("ingressclasses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Networking().V1beta1().IngressClasses().Informer()}, nil
 
+		// Group=node.k8s.io, Version=v1
+	case nodev1.SchemeGroupVersion.WithResource("runtimeclasses"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1().RuntimeClasses().Informer()}, nil
+
 		// Group=node.k8s.io, Version=v1alpha1
 	case nodev1alpha1.SchemeGroupVersion.WithResource("runtimeclasses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1alpha1().RuntimeClasses().Informer()}, nil
@@ -267,10 +272,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=node.k8s.io, Version=v1beta1
 	case nodev1beta1.SchemeGroupVersion.WithResource("runtimeclasses"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1beta1().RuntimeClasses().Informer()}, nil
-
-		// Group=node.k8s.io, Version=v1
-	case nodev1.SchemeGroupVersion.WithResource("runtimeclasses"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Node().V1().RuntimeClasses().Informer()}, nil
 
 		// Group=policy, Version=v1beta1
 	case policyv1beta1.SchemeGroupVersion.WithResource("poddisruptionbudgets"):
