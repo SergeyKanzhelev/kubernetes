@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	nodev1beta1 "k8s.io/api/node/v1beta1"
+	nodev1 "k8s.io/api/node/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeclasstest "k8s.io/kubernetes/pkg/kubelet/runtimeclass/testing"
@@ -38,7 +38,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 	f := framework.NewDefaultFramework("runtimeclass")
 
 	ginkgo.It("should reject a Pod requesting a RuntimeClass with conflicting node selector", func() {
-		scheduling := &nodev1beta1.Scheduling{
+		scheduling := &nodev1.Scheduling{
 			NodeSelector: map[string]string{
 				"foo": "conflict",
 			},
@@ -46,7 +46,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 
 		runtimeClass := newRuntimeClass(f.Namespace.Name, "conflict-runtimeclass", framework.TestContext.ContainerRuntime)
 		runtimeClass.Scheduling = scheduling
-		rc, err := f.ClientSet.NodeV1beta1().RuntimeClasses().Create(context.TODO(), runtimeClass, metav1.CreateOptions{})
+		rc, err := f.ClientSet.NodeV1().RuntimeClasses().Create(context.TODO(), runtimeClass, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "failed to create RuntimeClass resource")
 
 		pod := e2enode.NewRuntimeClassPod(rc.GetName())
@@ -72,7 +72,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 				Effect:   v1.TaintEffectNoSchedule,
 			},
 		}
-		scheduling := &nodev1beta1.Scheduling{
+		scheduling := &nodev1.Scheduling{
 			NodeSelector: nodeSelector,
 			Tolerations:  tolerations,
 		}
@@ -97,7 +97,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 		ginkgo.By("Trying to create runtimeclass and pod")
 		runtimeClass := newRuntimeClass(f.Namespace.Name, "non-conflict-runtimeclass", framework.TestContext.ContainerRuntime)
 		runtimeClass.Scheduling = scheduling
-		rc, err := f.ClientSet.NodeV1beta1().RuntimeClasses().Create(context.TODO(), runtimeClass, metav1.CreateOptions{})
+		rc, err := f.ClientSet.NodeV1().RuntimeClasses().Create(context.TODO(), runtimeClass, metav1.CreateOptions{})
 		framework.ExpectNoError(err, "failed to create RuntimeClass resource")
 
 		pod := e2enode.NewRuntimeClassPod(rc.GetName())
@@ -118,7 +118,7 @@ var _ = ginkgo.Describe("[sig-node] RuntimeClass", func() {
 })
 
 // newRuntimeClass returns a test runtime class.
-func newRuntimeClass(namespace, name, handler string) *nodev1beta1.RuntimeClass {
+func newRuntimeClass(namespace, name, handler string) *nodev1.RuntimeClass {
 	uniqueName := fmt.Sprintf("%s-%s", namespace, name)
 	return runtimeclasstest.NewRuntimeClass(uniqueName, e2enode.PreconfiguredRuntimeClassHandler(handler))
 }
