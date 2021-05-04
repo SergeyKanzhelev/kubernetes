@@ -78,10 +78,10 @@ func newHandler(responseCh <-chan string, panicCh <-chan interface{}, writeErrCh
 }
 
 func TestTimeout(t *testing.T) {
-	origReallyCrash := runtime.ReallyCrash
-	runtime.ReallyCrash = false
+	origReallyCrash := runtime.DoNotCrashForTests
+	runtime.DoNotCrashForTests = true
 	defer func() {
-		runtime.ReallyCrash = origReallyCrash
+		runtime.DoNotCrashForTests = origReallyCrash
 	}()
 
 	sendResponse := make(chan string, 1)

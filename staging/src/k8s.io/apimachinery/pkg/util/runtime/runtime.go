@@ -27,10 +27,9 @@ import (
 )
 
 var (
-	// ReallyCrash controls the behavior of HandleCrash and now defaults
-	// true. It's still exposed so components can optionally set to false
-	// to restore prior behavior.
-	ReallyCrash = true
+	// DoNotCrashForTests allows to override the behavior of HandleCrash
+	// for tests. Defaults to false
+	DoNotCrashForTests = false
 )
 
 // PanicHandlers is a list of functions which will be invoked when a panic happens.
@@ -50,7 +49,7 @@ func HandleCrash(additionalHandlers ...func(interface{})) {
 		for _, fn := range additionalHandlers {
 			fn(r)
 		}
-		if ReallyCrash {
+		if !DoNotCrashForTests {
 			// Actually proceed to panic.
 			panic(r)
 		}

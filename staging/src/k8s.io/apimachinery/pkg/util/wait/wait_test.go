@@ -176,10 +176,10 @@ func TestJitterUntilReturnsImmediately(t *testing.T) {
 
 func TestJitterUntilRecoversPanic(t *testing.T) {
 	// Save and restore crash handlers
-	originalReallyCrash := runtime.ReallyCrash
+	originalReallyCrash := runtime.DoNotCrashForTests
 	originalHandlers := runtime.PanicHandlers
 	defer func() {
-		runtime.ReallyCrash = originalReallyCrash
+		runtime.DoNotCrashForTests = originalReallyCrash
 		runtime.PanicHandlers = originalHandlers
 	}()
 
@@ -187,7 +187,7 @@ func TestJitterUntilRecoversPanic(t *testing.T) {
 	handled := 0
 
 	// Hook up a custom crash handler to ensure it is called when a jitter function panics
-	runtime.ReallyCrash = false
+	runtime.DoNotCrashForTests = true
 	runtime.PanicHandlers = []func(interface{}){
 		func(p interface{}) {
 			handled++
