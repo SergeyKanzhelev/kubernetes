@@ -8900,59 +8900,6 @@ var schemaYAML = typed.YAMLObject(`types:
           elementType:
             namedType: io.k8s.api.core.v1.Toleration
           elementRelationship: atomic
-- name: io.k8s.api.node.v1alpha1.Overhead
-  map:
-    fields:
-    - name: podFixed
-      type:
-        map:
-          elementType:
-            namedType: io.k8s.apimachinery.pkg.api.resource.Quantity
-- name: io.k8s.api.node.v1alpha1.RuntimeClass
-  map:
-    fields:
-    - name: apiVersion
-      type:
-        scalar: string
-    - name: kind
-      type:
-        scalar: string
-    - name: metadata
-      type:
-        namedType: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
-      default: {}
-    - name: spec
-      type:
-        namedType: io.k8s.api.node.v1alpha1.RuntimeClassSpec
-      default: {}
-- name: io.k8s.api.node.v1alpha1.RuntimeClassSpec
-  map:
-    fields:
-    - name: overhead
-      type:
-        namedType: io.k8s.api.node.v1alpha1.Overhead
-    - name: runtimeHandler
-      type:
-        scalar: string
-      default: ""
-    - name: scheduling
-      type:
-        namedType: io.k8s.api.node.v1alpha1.Scheduling
-- name: io.k8s.api.node.v1alpha1.Scheduling
-  map:
-    fields:
-    - name: nodeSelector
-      type:
-        map:
-          elementType:
-            scalar: string
-          elementRelationship: atomic
-    - name: tolerations
-      type:
-        list:
-          elementType:
-            namedType: io.k8s.api.core.v1.Toleration
-          elementRelationship: atomic
 - name: io.k8s.api.node.v1beta1.Overhead
   map:
     fields:

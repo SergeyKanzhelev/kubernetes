@@ -68,7 +68,6 @@ rules:
       - k8s.io/kubernetes/pkg/apis/node
       - k8s.io/kubernetes/pkg/apis/node/install
       - k8s.io/kubernetes/pkg/apis/node/v1
-      - k8s.io/kubernetes/pkg/apis/node/v1alpha1
       - k8s.io/kubernetes/pkg/apis/node/v1beta1
       - k8s.io/kubernetes/pkg/apis/policy
       - k8s.io/kubernetes/pkg/apis/policy/install

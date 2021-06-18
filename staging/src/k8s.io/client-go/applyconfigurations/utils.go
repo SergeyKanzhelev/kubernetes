@@ -46,7 +46,6 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	nodev1 "k8s.io/api/node/v1"
-	nodev1alpha1 "k8s.io/api/node/v1alpha1"
 	nodev1beta1 "k8s.io/api/node/v1beta1"
 	policyv1 "k8s.io/api/policy/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -89,7 +88,6 @@ import (
 	applyconfigurationsnetworkingv1 "k8s.io/client-go/applyconfigurations/networking/v1"
 	applyconfigurationsnetworkingv1beta1 "k8s.io/client-go/applyconfigurations/networking/v1beta1"
 	applyconfigurationsnodev1 "k8s.io/client-go/applyconfigurations/node/v1"
-	applyconfigurationsnodev1alpha1 "k8s.io/client-go/applyconfigurations/node/v1alpha1"
 	applyconfigurationsnodev1beta1 "k8s.io/client-go/applyconfigurations/node/v1beta1"
 	applyconfigurationspolicyv1 "k8s.io/client-go/applyconfigurations/policy/v1"
 	applyconfigurationspolicyv1beta1 "k8s.io/client-go/applyconfigurations/policy/v1beta1"
@@ -1119,16 +1117,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationsnodev1.RuntimeClassApplyConfiguration{}
 	case nodev1.SchemeGroupVersion.WithKind("Scheduling"):
 		return &applyconfigurationsnodev1.SchedulingApplyConfiguration{}
-
-		// Group=node.k8s.io, Version=v1alpha1
-	case nodev1alpha1.SchemeGroupVersion.WithKind("Overhead"):
-		return &applyconfigurationsnodev1alpha1.OverheadApplyConfiguration{}
-	case nodev1alpha1.SchemeGroupVersion.WithKind("RuntimeClass"):
-		return &applyconfigurationsnodev1alpha1.RuntimeClassApplyConfiguration{}
-	case nodev1alpha1.SchemeGroupVersion.WithKind("RuntimeClassSpec"):
-		return &applyconfigurationsnodev1alpha1.RuntimeClassSpecApplyConfiguration{}
-	case nodev1alpha1.SchemeGroupVersion.WithKind("Scheduling"):
-		return &applyconfigurationsnodev1alpha1.SchedulingApplyConfiguration{}
 
 		// Group=node.k8s.io, Version=v1beta1
 	case nodev1beta1.SchemeGroupVersion.WithKind("Overhead"):

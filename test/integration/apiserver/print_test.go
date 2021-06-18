@@ -137,7 +137,6 @@ func TestServerSidePrint(t *testing.T) {
 			{Group: "storage.k8s.io", Version: "v1beta1"},
 			{Group: "extensions", Version: "v1beta1"},
 			{Group: "node.k8s.io", Version: "v1"},
-			{Group: "node.k8s.io", Version: "v1alpha1"},
 			{Group: "node.k8s.io", Version: "v1beta1"},
 			{Group: "flowcontrol.apiserver.k8s.io", Version: "v1alpha1"},
 			{Group: "flowcontrol.apiserver.k8s.io", Version: "v1beta1"},
