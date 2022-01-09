@@ -3123,19 +3123,9 @@ func (in *PersistentVolumeSource) DeepCopyInto(out *PersistentVolumeSource) {
 		*out = new(RBDPersistentVolumeSource)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.Quobyte != nil {
-		in, out := &in.Quobyte, &out.Quobyte
-		*out = new(QuobyteVolumeSource)
-		**out = **in
-	}
 	if in.ISCSI != nil {
 		in, out := &in.ISCSI, &out.ISCSI
 		*out = new(ISCSIPersistentVolumeSource)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.FlexVolume != nil {
-		in, out := &in.FlexVolume, &out.FlexVolume
-		*out = new(FlexPersistentVolumeSource)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Cinder != nil {
@@ -3158,6 +3148,11 @@ func (in *PersistentVolumeSource) DeepCopyInto(out *PersistentVolumeSource) {
 		*out = new(FlockerVolumeSource)
 		**out = **in
 	}
+	if in.FlexVolume != nil {
+		in, out := &in.FlexVolume, &out.FlexVolume
+		*out = new(FlexPersistentVolumeSource)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.AzureFile != nil {
 		in, out := &in.AzureFile, &out.AzureFile
 		*out = new(AzureFilePersistentVolumeSource)
@@ -3166,6 +3161,11 @@ func (in *PersistentVolumeSource) DeepCopyInto(out *PersistentVolumeSource) {
 	if in.VsphereVolume != nil {
 		in, out := &in.VsphereVolume, &out.VsphereVolume
 		*out = new(VsphereVirtualDiskVolumeSource)
+		**out = **in
+	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(QuobyteVolumeSource)
 		**out = **in
 	}
 	if in.AzureDisk != nil {
@@ -3766,15 +3766,15 @@ func (in *PodSecurityContext) DeepCopyInto(out *PodSecurityContext) {
 		*out = new(int64)
 		**out = **in
 	}
-	if in.FSGroupChangePolicy != nil {
-		in, out := &in.FSGroupChangePolicy, &out.FSGroupChangePolicy
-		*out = new(PodFSGroupChangePolicy)
-		**out = **in
-	}
 	if in.Sysctls != nil {
 		in, out := &in.Sysctls, &out.Sysctls
 		*out = make([]Sysctl, len(*in))
 		copy(*out, *in)
+	}
+	if in.FSGroupChangePolicy != nil {
+		in, out := &in.FSGroupChangePolicy, &out.FSGroupChangePolicy
+		*out = new(PodFSGroupChangePolicy)
+		**out = **in
 	}
 	if in.SeccompProfile != nil {
 		in, out := &in.SeccompProfile, &out.SeccompProfile
@@ -3907,11 +3907,6 @@ func (in *PodSpec) DeepCopyInto(out *PodSpec) {
 		*out = new(int32)
 		**out = **in
 	}
-	if in.PreemptionPolicy != nil {
-		in, out := &in.PreemptionPolicy, &out.PreemptionPolicy
-		*out = new(PreemptionPolicy)
-		**out = **in
-	}
 	if in.DNSConfig != nil {
 		in, out := &in.DNSConfig, &out.DNSConfig
 		*out = new(PodDNSConfig)
@@ -3925,6 +3920,11 @@ func (in *PodSpec) DeepCopyInto(out *PodSpec) {
 	if in.RuntimeClassName != nil {
 		in, out := &in.RuntimeClassName, &out.RuntimeClassName
 		*out = new(string)
+		**out = **in
+	}
+	if in.PreemptionPolicy != nil {
+		in, out := &in.PreemptionPolicy, &out.PreemptionPolicy
+		*out = new(PreemptionPolicy)
 		**out = **in
 	}
 	if in.Overhead != nil {
@@ -5832,11 +5832,6 @@ func (in *VolumeSource) DeepCopyInto(out *VolumeSource) {
 		*out = new(RBDVolumeSource)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.Quobyte != nil {
-		in, out := &in.Quobyte, &out.Quobyte
-		*out = new(QuobyteVolumeSource)
-		**out = **in
-	}
 	if in.FlexVolume != nil {
 		in, out := &in.FlexVolume, &out.FlexVolume
 		*out = new(FlexVolumeSource)
@@ -5880,6 +5875,11 @@ func (in *VolumeSource) DeepCopyInto(out *VolumeSource) {
 	if in.VsphereVolume != nil {
 		in, out := &in.VsphereVolume, &out.VsphereVolume
 		*out = new(VsphereVirtualDiskVolumeSource)
+		**out = **in
+	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(QuobyteVolumeSource)
 		**out = **in
 	}
 	if in.AzureDisk != nil {

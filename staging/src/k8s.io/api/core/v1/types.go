@@ -610,6 +610,7 @@ type PersistentVolumeClaimStatus struct {
 	ResizeStatus *PersistentVolumeClaimResizeStatus `json:"resizeStatus,omitempty" protobuf:"bytes,6,opt,name=resizeStatus,casttype=PersistentVolumeClaimResizeStatus"`
 }
 
+// PersistentVolumeAccessMode defines various access modes for PV.
 // +enum
 type PersistentVolumeAccessMode string
 
@@ -625,6 +626,7 @@ const (
 	ReadWriteOncePod PersistentVolumeAccessMode = "ReadWriteOncePod"
 )
 
+// PersistentVolumePhase defines the phase in which a PV is
 // +enum
 type PersistentVolumePhase string
 
@@ -644,6 +646,7 @@ const (
 	VolumeFailed PersistentVolumePhase = "Failed"
 )
 
+// PersistentVolumeClaimPhase defines the phase of PV claim
 // +enum
 type PersistentVolumeClaimPhase string
 
@@ -3281,7 +3284,7 @@ type PodSpec struct {
 	// Some pod and container fields are restricted if this is set.
 	//
 	// If the OS field is set to linux, the following fields must be unset:
-	// -securityContext.windowsOptions
+	// - securityContext.windowsOptions
 	//
 	// If the OS field is set to windows, following fields must be unset:
 	// - spec.hostPID
@@ -6520,7 +6523,6 @@ const (
 )
 
 // PortStatus represents the error condition of a service port
-
 type PortStatus struct {
 	// Port is the port number of the service port of which status is recorded here
 	Port int32 `json:"port" protobuf:"varint,1,opt,name=port"`

@@ -5356,15 +5356,15 @@ func autoConvert_core_PersistentVolumeSource_To_v1_PersistentVolumeSource(in *co
 	out.Glusterfs = (*v1.GlusterfsPersistentVolumeSource)(unsafe.Pointer(in.Glusterfs))
 	out.NFS = (*v1.NFSVolumeSource)(unsafe.Pointer(in.NFS))
 	out.RBD = (*v1.RBDPersistentVolumeSource)(unsafe.Pointer(in.RBD))
-	out.Quobyte = (*v1.QuobyteVolumeSource)(unsafe.Pointer(in.Quobyte))
 	out.ISCSI = (*v1.ISCSIPersistentVolumeSource)(unsafe.Pointer(in.ISCSI))
-	out.FlexVolume = (*v1.FlexPersistentVolumeSource)(unsafe.Pointer(in.FlexVolume))
 	out.Cinder = (*v1.CinderPersistentVolumeSource)(unsafe.Pointer(in.Cinder))
 	out.CephFS = (*v1.CephFSPersistentVolumeSource)(unsafe.Pointer(in.CephFS))
 	out.FC = (*v1.FCVolumeSource)(unsafe.Pointer(in.FC))
 	out.Flocker = (*v1.FlockerVolumeSource)(unsafe.Pointer(in.Flocker))
+	out.FlexVolume = (*v1.FlexPersistentVolumeSource)(unsafe.Pointer(in.FlexVolume))
 	out.AzureFile = (*v1.AzureFilePersistentVolumeSource)(unsafe.Pointer(in.AzureFile))
 	out.VsphereVolume = (*v1.VsphereVirtualDiskVolumeSource)(unsafe.Pointer(in.VsphereVolume))
+	out.Quobyte = (*v1.QuobyteVolumeSource)(unsafe.Pointer(in.Quobyte))
 	out.AzureDisk = (*v1.AzureDiskVolumeSource)(unsafe.Pointer(in.AzureDisk))
 	out.PhotonPersistentDisk = (*v1.PhotonPersistentDiskVolumeSource)(unsafe.Pointer(in.PhotonPersistentDisk))
 	out.PortworxVolume = (*v1.PortworxVolumeSource)(unsafe.Pointer(in.PortworxVolume))
@@ -6098,8 +6098,8 @@ func autoConvert_core_PodSecurityContext_To_v1_PodSecurityContext(in *core.PodSe
 	out.RunAsNonRoot = (*bool)(unsafe.Pointer(in.RunAsNonRoot))
 	out.SupplementalGroups = *(*[]int64)(unsafe.Pointer(&in.SupplementalGroups))
 	out.FSGroup = (*int64)(unsafe.Pointer(in.FSGroup))
-	out.FSGroupChangePolicy = (*v1.PodFSGroupChangePolicy)(unsafe.Pointer(in.FSGroupChangePolicy))
 	out.Sysctls = *(*[]v1.Sysctl)(unsafe.Pointer(&in.Sysctls))
+	out.FSGroupChangePolicy = (*v1.PodFSGroupChangePolicy)(unsafe.Pointer(in.FSGroupChangePolicy))
 	out.SeccompProfile = (*v1.SeccompProfile)(unsafe.Pointer(in.SeccompProfile))
 	return nil
 }
@@ -6169,6 +6169,7 @@ func autoConvert_v1_PodSpec_To_core_PodSpec(in *v1.PodSpec, out *core.PodSpec, s
 	out.ImagePullSecrets = *(*[]core.LocalObjectReference)(unsafe.Pointer(&in.ImagePullSecrets))
 	out.Hostname = in.Hostname
 	out.Subdomain = in.Subdomain
+	out.SetHostnameAsFQDN = (*bool)(unsafe.Pointer(in.SetHostnameAsFQDN))
 	out.Affinity = (*core.Affinity)(unsafe.Pointer(in.Affinity))
 	out.SchedulerName = in.SchedulerName
 	out.Tolerations = *(*[]core.Toleration)(unsafe.Pointer(&in.Tolerations))
@@ -6182,7 +6183,6 @@ func autoConvert_v1_PodSpec_To_core_PodSpec(in *v1.PodSpec, out *core.PodSpec, s
 	out.PreemptionPolicy = (*core.PreemptionPolicy)(unsafe.Pointer(in.PreemptionPolicy))
 	out.Overhead = *(*core.ResourceList)(unsafe.Pointer(&in.Overhead))
 	out.TopologySpreadConstraints = *(*[]core.TopologySpreadConstraint)(unsafe.Pointer(&in.TopologySpreadConstraints))
-	out.SetHostnameAsFQDN = (*bool)(unsafe.Pointer(in.SetHostnameAsFQDN))
 	out.OS = (*core.PodOS)(unsafe.Pointer(in.OS))
 	return nil
 }
@@ -6229,10 +6229,10 @@ func autoConvert_core_PodSpec_To_v1_PodSpec(in *core.PodSpec, out *v1.PodSpec, s
 	out.HostAliases = *(*[]v1.HostAlias)(unsafe.Pointer(&in.HostAliases))
 	out.PriorityClassName = in.PriorityClassName
 	out.Priority = (*int32)(unsafe.Pointer(in.Priority))
-	out.PreemptionPolicy = (*v1.PreemptionPolicy)(unsafe.Pointer(in.PreemptionPolicy))
 	out.DNSConfig = (*v1.PodDNSConfig)(unsafe.Pointer(in.DNSConfig))
 	out.ReadinessGates = *(*[]v1.PodReadinessGate)(unsafe.Pointer(&in.ReadinessGates))
 	out.RuntimeClassName = (*string)(unsafe.Pointer(in.RuntimeClassName))
+	out.PreemptionPolicy = (*v1.PreemptionPolicy)(unsafe.Pointer(in.PreemptionPolicy))
 	out.Overhead = *(*v1.ResourceList)(unsafe.Pointer(&in.Overhead))
 	out.EnableServiceLinks = (*bool)(unsafe.Pointer(in.EnableServiceLinks))
 	out.TopologySpreadConstraints = *(*[]v1.TopologySpreadConstraint)(unsafe.Pointer(&in.TopologySpreadConstraints))
@@ -8227,7 +8227,6 @@ func autoConvert_core_VolumeSource_To_v1_VolumeSource(in *core.VolumeSource, out
 	out.Glusterfs = (*v1.GlusterfsVolumeSource)(unsafe.Pointer(in.Glusterfs))
 	out.PersistentVolumeClaim = (*v1.PersistentVolumeClaimVolumeSource)(unsafe.Pointer(in.PersistentVolumeClaim))
 	out.RBD = (*v1.RBDVolumeSource)(unsafe.Pointer(in.RBD))
-	out.Quobyte = (*v1.QuobyteVolumeSource)(unsafe.Pointer(in.Quobyte))
 	out.FlexVolume = (*v1.FlexVolumeSource)(unsafe.Pointer(in.FlexVolume))
 	out.Cinder = (*v1.CinderVolumeSource)(unsafe.Pointer(in.Cinder))
 	out.CephFS = (*v1.CephFSVolumeSource)(unsafe.Pointer(in.CephFS))
@@ -8237,6 +8236,7 @@ func autoConvert_core_VolumeSource_To_v1_VolumeSource(in *core.VolumeSource, out
 	out.AzureFile = (*v1.AzureFileVolumeSource)(unsafe.Pointer(in.AzureFile))
 	out.ConfigMap = (*v1.ConfigMapVolumeSource)(unsafe.Pointer(in.ConfigMap))
 	out.VsphereVolume = (*v1.VsphereVirtualDiskVolumeSource)(unsafe.Pointer(in.VsphereVolume))
+	out.Quobyte = (*v1.QuobyteVolumeSource)(unsafe.Pointer(in.Quobyte))
 	out.AzureDisk = (*v1.AzureDiskVolumeSource)(unsafe.Pointer(in.AzureDisk))
 	out.PhotonPersistentDisk = (*v1.PhotonPersistentDiskVolumeSource)(unsafe.Pointer(in.PhotonPersistentDisk))
 	if in.Projected != nil {

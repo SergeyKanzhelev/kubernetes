@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import (
 
 const (
 	// NamespaceDefault means the object is in the default namespace which is applied when not specified by clients
-	NamespaceDefault = "default"
+	NamespaceDefault string = "default"
 	// NamespaceAll is the default argument to specify on a context when you want to list or filter resources across all namespaces
-	NamespaceAll = ""
+	NamespaceAll string = ""
 	// NamespaceNone is the argument for a context when there is no namespace.
 	NamespaceNone = ""
 	// NamespaceSystem is the system namespace where we place system components.
@@ -36,44 +36,49 @@ const (
 	// NamespacePublic is the namespace where we place public info (ConfigMaps)
 	NamespacePublic = "kube-public"
 	// NamespaceNodeLease is the namespace where we place node lease objects (used for node heartbeats)
-	NamespaceNodeLease = "kube-node-lease"
+	NamespaceNodeLease string = "kube-node-lease"
 	// TerminationMessagePathDefault means the default path to capture the application termination message running in a container
 	TerminationMessagePathDefault = "/dev/termination-log"
 )
 
-// Volume represents a named volume in a pod that may be accessed by any containers in the pod.
+// Volume represents a named volume in a pod that may be accessed by any container in the pod.
 type Volume struct {
-	// Required: This must be a DNS_LABEL.  Each volume in a pod must have
-	// a unique name.
+	// Volume's name.
+	// Must be a DNS_LABEL and unique within the pod.
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
 	Name string
-	// The VolumeSource represents the location and type of a volume to mount.
-	// This is optional for now. If not specified, the Volume is implied to be an EmptyDir.
+	// VolumeSource represents the location and type of the mounted volume.
+	// If not specified, the Volume is implied to be an EmptyDir.
 	// This implied behavior is deprecated and will be removed in a future version.
 	// +optional
 	VolumeSource
 }
 
-// VolumeSource represents the source location of a volume to mount.
+// Represents the source of a volume to mount.
 // Only one of its members may be specified.
 type VolumeSource struct {
-	// HostPath represents file or directory on the host machine that is
-	// directly exposed to the container. This is generally used for system
-	// agents or other privileged things that are allowed to see the host
-	// machine. Most containers will NOT need this.
+	// HostPath represents a pre-existing file or directory on the host
+	// machine that is directly exposed to the container. This is generally
+	// used for system agents or other privileged things that are allowed
+	// to see the host machine. Most containers will NOT need this.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 	// ---
 	// TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
 	// mount host directories as read/write.
 	// +optional
 	HostPath *HostPathVolumeSource
 	// EmptyDir represents a temporary directory that shares a pod's lifetime.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 	// +optional
 	EmptyDir *EmptyDirVolumeSource
 	// GCEPersistentDisk represents a GCE Disk resource that is attached to a
 	// kubelet's host machine and then exposed to the pod.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 	// +optional
 	GCEPersistentDisk *GCEPersistentDiskVolumeSource
-	// AWSElasticBlockStore represents an AWS EBS disk that is attached to a
+	// AWSElasticBlockStore represents an AWS Disk resource that is attached to a
 	// kubelet's host machine and then exposed to the pod.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
 	// +optional
 	AWSElasticBlockStore *AWSElasticBlockStoreVolumeSource
 	// GitRepo represents a git repository at a particular revision.
@@ -83,39 +88,42 @@ type VolumeSource struct {
 	// +optional
 	GitRepo *GitRepoVolumeSource
 	// Secret represents a secret that should populate this volume.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
 	// +optional
 	Secret *SecretVolumeSource
 	// NFS represents an NFS mount on the host that shares a pod's lifetime
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs
 	// +optional
 	NFS *NFSVolumeSource
-	// ISCSIVolumeSource represents an ISCSI Disk resource that is attached to a
+	// ISCSI represents an ISCSI Disk resource that is attached to a
 	// kubelet's host machine and then exposed to the pod.
+	// More info: https://examples.k8s.io/volumes/iscsi/README.md
 	// +optional
 	ISCSI *ISCSIVolumeSource
-	// Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime
+	// Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md
 	// +optional
 	Glusterfs *GlusterfsVolumeSource
-	// PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace
+	// PersistentVolumeClaimVolumeSource represents a reference to a
+	// PersistentVolumeClaim in the same namespace.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 	// +optional
 	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource
-	// RBD represents a Rados Block Device mount on the host that shares a pod's lifetime
+	// RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md
 	// +optional
 	RBD *RBDVolumeSource
-
-	// Quobyte represents a Quobyte mount on the host that shares a pod's lifetime
-	// +optional
-	Quobyte *QuobyteVolumeSource
 
 	// FlexVolume represents a generic volume resource that is
 	// provisioned/attached using an exec based plugin.
 	// +optional
 	FlexVolume *FlexVolumeSource
-
-	// Cinder represents a cinder volume attached and mounted on kubelet's host machine.
+	// Cinder represents a cinder volume attached and mounted on kubelets host machine.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 	// +optional
 	Cinder *CinderVolumeSource
 
-	// CephFS represents a Cephfs mount on the host that shares a pod's lifetime
+	// CephFS represents a Ceph FS mount on the host that shares a pod's lifetime
 	// +optional
 	CephFS *CephFSVolumeSource
 
@@ -123,7 +131,7 @@ type VolumeSource struct {
 	// +optional
 	Flocker *FlockerVolumeSource
 
-	// DownwardAPI represents metadata about the pod that should populate this volume
+	// DownwardAPI represents downward API about the pod that should populate this volume
 	// +optional
 	DownwardAPI *DownwardAPIVolumeSource
 	// FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.
@@ -138,20 +146,23 @@ type VolumeSource struct {
 	// VsphereVolume represents a vSphere volume attached and mounted on kubelet's host machine
 	// +optional
 	VsphereVolume *VsphereVirtualDiskVolumeSource
+	// Quobyte represents a Quobyte mount on the host that shares a pod's lifetime
+	// +optional
+	Quobyte *QuobyteVolumeSource
 	// AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
 	// +optional
 	AzureDisk *AzureDiskVolumeSource
-	// PhotonPersistentDisk represents a Photon Controller persistent disk attached and mounted on kubelet's host machine
+	// PhotonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSource
 	// Items for all in one resources secrets, configmaps, and downward API
 	Projected *ProjectedVolumeSource
-	// PortworxVolume represents a portworx volume attached and mounted on kubelet's host machine
+	// PortworxVolume represents a portworx volume attached and mounted on kubelets host machine
 	// +optional
 	PortworxVolume *PortworxVolumeSource
 	// ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
 	// +optional
 	ScaleIO *ScaleIOVolumeSource
-	// StorageOS represents a StorageOS volume that is attached to the kubelet's host machine and mounted into the pod
+	// StorageOS represents a StorageOS volume attached and mounted on Kubernetes nodes.
 	// +optional
 	StorageOS *StorageOSVolumeSource
 	// CSI (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).
@@ -186,44 +197,59 @@ type VolumeSource struct {
 	Ephemeral *EphemeralVolumeSource
 }
 
-// PersistentVolumeSource is similar to VolumeSource but meant for the administrator who creates PVs.
-// Exactly one of its members must be set.
+// PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.
+// This volume finds the bound PV and mounts that volume for the pod. A
+// PersistentVolumeClaimVolumeSource is, essentially, a wrapper around another
+// type of volume that is owned by someone else (the system).
+type PersistentVolumeClaimVolumeSource struct {
+	// ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
+	ClaimName string
+	// Will force the ReadOnly setting in VolumeMounts.
+	// Default false.
+	// +optional
+	ReadOnly bool
+}
+
+// PersistentVolumeSource is similar to VolumeSource but meant for the
+// administrator who creates PVs. Exactly one of its members must be set.
 type PersistentVolumeSource struct {
 	// GCEPersistentDisk represents a GCE Disk resource that is attached to a
-	// kubelet's host machine and then exposed to the pod.
+	// kubelet's host machine and then exposed to the pod. Provisioned by an admin.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
 	// +optional
 	GCEPersistentDisk *GCEPersistentDiskVolumeSource
-	// AWSElasticBlockStore represents an AWS EBS disk that is attached to a
+	// AWSElasticBlockStore represents an AWS Disk resource that is attached to a
 	// kubelet's host machine and then exposed to the pod.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
 	// +optional
 	AWSElasticBlockStore *AWSElasticBlockStoreVolumeSource
 	// HostPath represents a directory on the host.
 	// Provisioned by a developer or tester.
 	// This is useful for single-node development and testing only!
 	// On-host storage is not supported in any way and WILL NOT WORK in a multi-node cluster.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 	// +optional
 	HostPath *HostPathVolumeSource
-	// Glusterfs represents a Glusterfs volume that is attached to a host and exposed to the pod
+	// Glusterfs represents a Glusterfs volume that is attached to a host and
+	// exposed to the pod. Provisioned by an admin.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md
 	// +optional
 	Glusterfs *GlusterfsPersistentVolumeSource
-	// NFS represents an NFS mount on the host that shares a pod's lifetime
+	// NFS represents an NFS mount on the host. Provisioned by an admin.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs
 	// +optional
 	NFS *NFSVolumeSource
-	// RBD represents a Rados Block Device mount on the host that shares a pod's lifetime
+	// RBD represents a Rados Block Device mount on the host that shares a pod's lifetime.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md
 	// +optional
 	RBD *RBDPersistentVolumeSource
-	// Quobyte represents a Quobyte mount on the host that shares a pod's lifetime
-	// +optional
-	Quobyte *QuobyteVolumeSource
-	// ISCSIPersistentVolumeSource represents an ISCSI resource that is attached to a
-	// kubelet's host machine and then exposed to the pod.
+	// ISCSI represents an ISCSI Disk resource that is attached to a
+	// kubelet's host machine and then exposed to the pod. Provisioned by an admin.
 	// +optional
 	ISCSI *ISCSIPersistentVolumeSource
-	// FlexVolume represents a generic volume resource that is
-	// provisioned/attached using an exec based plugin.
-	// +optional
-	FlexVolume *FlexPersistentVolumeSource
-	// Cinder represents a cinder volume attached and mounted on kubelet's host machine.
+	// Cinder represents a cinder volume attached and mounted on kubelets host machine.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
 	// +optional
 	Cinder *CinderPersistentVolumeSource
 	// CephFS represents a Ceph FS mount on the host that shares a pod's lifetime
@@ -232,21 +258,28 @@ type PersistentVolumeSource struct {
 	// FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.
 	// +optional
 	FC *FCVolumeSource
-	// Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running
+	// Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage. This depends on the Flocker control service being running
 	// +optional
 	Flocker *FlockerVolumeSource
+	// FlexVolume represents a generic volume resource that is
+	// provisioned/attached using an exec based plugin.
+	// +optional
+	FlexVolume *FlexPersistentVolumeSource
 	// AzureFile represents an Azure File Service mount on the host and bind mount to the pod.
 	// +optional
 	AzureFile *AzureFilePersistentVolumeSource
 	// VsphereVolume represents a vSphere volume attached and mounted on kubelet's host machine
 	// +optional
 	VsphereVolume *VsphereVirtualDiskVolumeSource
+	// Quobyte represents a Quobyte mount on the host that shares a pod's lifetime
+	// +optional
+	Quobyte *QuobyteVolumeSource
 	// AzureDisk represents an Azure Data Disk mount on the host and bind mount to the pod.
 	// +optional
 	AzureDisk *AzureDiskVolumeSource
-	// PhotonPersistentDisk represents a Photon Controller persistent disk attached and mounted on kubelet's host machine
+	// PhotonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSource
-	// PortworxVolume represents a portworx volume attached and mounted on kubelet's host machine
+	// PortworxVolume represents a portworx volume attached and mounted on kubelets host machine
 	// +optional
 	PortworxVolume *PortworxVolumeSource
 	// ScaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
@@ -259,24 +292,14 @@ type PersistentVolumeSource struct {
 	// More info: https://examples.k8s.io/volumes/storageos/README.md
 	// +optional
 	StorageOS *StorageOSPersistentVolumeSource
-	// CSI (Container Storage Interface) represents storage that is handled by an external CSI driver.
+	// CSI represents storage that is handled by an external CSI driver (Beta feature).
 	// +optional
 	CSI *CSIPersistentVolumeSource
 }
 
-// PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace
-type PersistentVolumeClaimVolumeSource struct {
-	// ClaimName is the name of a PersistentVolumeClaim in the same namespace as the pod using this volume
-	ClaimName string
-	// Optional: Defaults to false (read/write).  ReadOnly here
-	// will force the ReadOnly setting in VolumeMounts
-	// +optional
-	ReadOnly bool
-}
-
 const (
 	// BetaStorageClassAnnotation represents the beta/previous StorageClass annotation.
-	// It's deprecated and will be removed in a future release. (#51440)
+	// It's currently still used and will be held for backwards compatibility
 	BetaStorageClassAnnotation = "volume.beta.kubernetes.io/storage-class"
 
 	// MountOptionAnnotation defines mount option annotation used in PVs
@@ -285,38 +308,52 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PersistentVolume struct captures the details of the implementation of PV storage
+// PersistentVolume (PV) is a storage resource provisioned by an administrator.
+// It is analogous to a node.
+// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 type PersistentVolume struct {
 	metav1.TypeMeta
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metav1.ObjectMeta
 
-	//Spec defines a persistent volume owned by the cluster
+	// Spec defines a specification of a persistent volume owned by the cluster.
+	// Provisioned by an administrator.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistent-volumes
 	// +optional
 	Spec PersistentVolumeSpec
 
-	// Status represents the current information about persistent volume.
+	// Status represents the current information/status for the persistent volume.
+	// Populated by the system.
+	// Read-only.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistent-volumes
 	// +optional
 	Status PersistentVolumeStatus
 }
 
-// PersistentVolumeSpec has most of the details required to define a persistent volume
+// PersistentVolumeSpec is the specification of a persistent volume.
 type PersistentVolumeSpec struct {
-	// Resources represents the actual resources of the volume
+	// A description of the persistent volume's resources and capacity.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity
 	Capacity ResourceList
-	// Source represents the location and type of a volume to mount.
+	// The actual volume backing the persistent volume.
 	PersistentVolumeSource
-	// AccessModes contains all ways the volume can be mounted
+	// AccessModes contains all ways the volume can be mounted.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes
 	// +optional
 	AccessModes []PersistentVolumeAccessMode
 	// ClaimRef is part of a bi-directional binding between PersistentVolume and PersistentVolumeClaim.
-	// ClaimRef is expected to be non-nil when bound.
+	// Expected to be non-nil when bound.
 	// claim.VolumeName is the authoritative bind between PV and PVC.
-	// When set to non-nil value, PVC.Spec.Selector of the referenced PVC is
-	// ignored, i.e. labels of this PV do not need to match PVC selector.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#binding
 	// +optional
 	ClaimRef *ObjectReference
-	// Optional: what happens to a persistent volume when released from its claim.
+	// What happens to a persistent volume when released from its claim.
+	// Valid options are Retain (default for manually created PersistentVolumes), Delete (default
+	// for dynamically provisioned PersistentVolumes), and Recycle (deprecated).
+	// Recycle must be supported by the volume plugin underlying this PersistentVolume.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming
 	// +optional
 	PersistentVolumeReclaimPolicy PersistentVolumeReclaimPolicy
 	// Name of StorageClass to which this persistent volume belongs. Empty value
@@ -325,6 +362,7 @@ type PersistentVolumeSpec struct {
 	StorageClassName string
 	// A list of mount options, e.g. ["ro", "soft"]. Not validated - mount will
 	// simply fail if one is invalid.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#mount-options
 	// +optional
 	MountOptions []string
 	// volumeMode defines if a volume is intended to be used with a formatted filesystem
@@ -343,7 +381,7 @@ type VolumeNodeAffinity struct {
 	Required *NodeSelector
 }
 
-// PersistentVolumeReclaimPolicy describes a policy for end-of-life maintenance of persistent volumes
+// PersistentVolumeReclaimPolicy describes a policy for end-of-life maintenance of persistent volumes.
 type PersistentVolumeReclaimPolicy string
 
 const (
@@ -369,26 +407,32 @@ const (
 	PersistentVolumeFilesystem PersistentVolumeMode = "Filesystem"
 )
 
-// PersistentVolumeStatus represents the status of PV storage
+// PersistentVolumeStatus is the current status of a persistent volume.
 type PersistentVolumeStatus struct {
-	// Phase indicates if a volume is available, bound to a claim, or released by a claim
+	// Phase indicates if a volume is available, bound to a claim, or released by a claim.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#phase
 	// +optional
 	Phase PersistentVolumePhase
 	// A human-readable message indicating details about why the volume is in this state.
 	// +optional
 	Message string
-	// Reason is a brief CamelCase string that describes any failure and is meant for machine parsing and tidy display in the CLI
+	// Reason is a brief CamelCase string that describes any failure and is meant
+	// for machine parsing and tidy display in the CLI.
 	// +optional
 	Reason string
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PersistentVolumeList represents a list of PVs
+// PersistentVolumeList is a list of PersistentVolume items.
 type PersistentVolumeList struct {
 	metav1.TypeMeta
+	// Standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
 	metav1.ListMeta
+	// List of persistent volumes.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	Items []PersistentVolume
 }
 
@@ -397,50 +441,59 @@ type PersistentVolumeList struct {
 // PersistentVolumeClaim is a user's request for and claim to a persistent volume
 type PersistentVolumeClaim struct {
 	metav1.TypeMeta
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	metav1.ObjectMeta
 
-	// Spec defines the volume requested by a pod author
+	// Spec defines the desired characteristics of a volume requested by a pod author.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 	// +optional
 	Spec PersistentVolumeClaimSpec
 
-	// Status represents the current information about a claim
+	// Status represents the current information/status of a persistent volume claim.
+	// Read-only.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 	// +optional
 	Status PersistentVolumeClaimStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PersistentVolumeClaimList represents the list of PV claims
+// PersistentVolumeClaimList is a list of PersistentVolumeClaim items.
 type PersistentVolumeClaimList struct {
 	metav1.TypeMeta
+	// Standard list metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	// +optional
 	metav1.ListMeta
+	// A list of persistent volume claims.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims
 	Items []PersistentVolumeClaim
 }
 
 // PersistentVolumeClaimSpec describes the common attributes of storage devices
 // and allows a Source for provider-specific attributes
 type PersistentVolumeClaimSpec struct {
-	// Contains the types of access modes required
+	// AccessModes contains the desired access modes the volume should have.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 	// +optional
 	AccessModes []PersistentVolumeAccessMode
-	// A label query over volumes to consider for binding. This selector is
-	// ignored when VolumeName is set
+	// A label query over volumes to consider for binding.
 	// +optional
 	Selector *metav1.LabelSelector
-	// Resources represents the minimum resources required
+	// Resources represents the minimum resources the volume should have.
 	// If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements
 	// that are lower than previous value but must still be higher than capacity recorded in the
 	// status field of the claim.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 	// +optional
 	Resources ResourceRequirements
-	// VolumeName is the binding reference to the PersistentVolume backing this
-	// claim. When set to non-empty value Selector is not evaluated
+	// VolumeName is the binding reference to the PersistentVolume backing this claim.
 	// +optional
 	VolumeName string
 	// Name of the StorageClass required by the claim.
-	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#class-1
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
 	// +optional
 	StorageClassName *string
 	// volumeMode defines what type of volume is required by the claim.
@@ -477,13 +530,12 @@ type PersistentVolumeClaimSpec struct {
 	DataSourceRef *TypedLocalObjectReference
 }
 
-// PersistentVolumeClaimConditionType defines the condition of PV claim.
-// Valid values are either "Resizing" or "FileSystemResizePending".
+// PersistentVolumeClaimConditionType is a valid value of PersistentVolumeClaimCondition.Type
 type PersistentVolumeClaimConditionType string
 
 // These are valid conditions of Pvc
 const (
-	// An user trigger resize of pvc has been started
+	// PersistentVolumeClaimResizing - a user trigger resize of pvc has been started
 	PersistentVolumeClaimResizing PersistentVolumeClaimConditionType = "Resizing"
 	// PersistentVolumeClaimFileSystemResizePending - controller resize is finished and a file system resize is pending on node
 	PersistentVolumeClaimFileSystemResizePending PersistentVolumeClaimConditionType = "FileSystemResizePending"
@@ -509,31 +561,40 @@ const (
 	PersistentVolumeClaimNodeExpansionFailed PersistentVolumeClaimResizeStatus = "NodeExpansionFailed"
 )
 
-// PersistentVolumeClaimCondition represents the current condition of PV claim
+// PersistentVolumeClaimCondition contails details about state of pvc
 type PersistentVolumeClaimCondition struct {
 	Type   PersistentVolumeClaimConditionType
 	Status ConditionStatus
+	// Last time we probed the condition.
 	// +optional
 	LastProbeTime metav1.Time
+	// Last time the condition transitioned from one status to another.
 	// +optional
 	LastTransitionTime metav1.Time
+	// Unique, this should be a short, machine understandable string that gives the reason
+	// for condition's last transition. If it reports "ResizeStarted" that means the underlying
+	// persistent volume is being resized.
 	// +optional
 	Reason string
+	// Human-readable message indicating details about last transition.
 	// +optional
 	Message string
 }
 
-// PersistentVolumeClaimStatus represents the status of PV claim
+// PersistentVolumeClaimStatus is the current status of a persistent volume claim.
 type PersistentVolumeClaimStatus struct {
-	// Phase represents the current phase of PersistentVolumeClaim
+	// Phase represents the current phase of PersistentVolumeClaim.
 	// +optional
 	Phase PersistentVolumeClaimPhase
-	// AccessModes contains all ways the volume backing the PVC can be mounted
+	// AccessModes contains the actual access modes the volume backing the PVC has.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
 	// +optional
 	AccessModes []PersistentVolumeAccessMode
-	// Represents the actual resources of the underlying volume
+	// Represents the actual resources of the underlying volume.
 	// +optional
 	Capacity ResourceList
+	// Current Condition of persistent volume claim. If underlying persistent volume is being
+	// resized then the Condition will be set to 'ResizeStarted'.
 	// +optional
 	Conditions []PersistentVolumeClaimCondition
 	// The storage resource within AllocatedResources tracks the capacity allocated to a PVC. It may
@@ -561,13 +622,13 @@ type PersistentVolumeAccessMode string
 
 // These are the valid values for PersistentVolumeAccessMode
 const (
-	// can be mounted read/write mode to exactly 1 host
+	// can be mounted in read/write mode to exactly 1 host
 	ReadWriteOnce PersistentVolumeAccessMode = "ReadWriteOnce"
 	// can be mounted in read-only mode to many hosts
 	ReadOnlyMany PersistentVolumeAccessMode = "ReadOnlyMany"
 	// can be mounted in read/write mode to many hosts
 	ReadWriteMany PersistentVolumeAccessMode = "ReadWriteMany"
-	// can be mounted read/write mode to exactly 1 pod
+	// can be mounted in read/write mode to exactly 1 pod
 	// cannot be used in combination with other access modes
 	ReadWriteOncePod PersistentVolumeAccessMode = "ReadWriteOncePod"
 )
@@ -635,21 +696,23 @@ const (
 // HostPathVolumeSource represents a host path mapped into a pod.
 // Host path volumes do not support ownership management or SELinux relabeling.
 type HostPathVolumeSource struct {
+	// Path of the directory on the host.
 	// If the path is a symlink, it will follow the link to the real path.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 	Path string
+	// Type for HostPath Volume
 	// Defaults to ""
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
 	Type *HostPathType
 }
 
-// EmptyDirVolumeSource represents an empty directory for a pod.
+// Represents an empty directory for a pod.
 // Empty directory volumes support ownership management and SELinux relabeling.
 type EmptyDirVolumeSource struct {
-	// TODO: Longer term we want to represent the selection of underlying
-	// media more like a scheduling problem - user says what traits they
-	// need, we give them a backing store that satisfies that.  For now
-	// this will cover the most common needs.
-	// Optional: what type of storage medium should back this directory.
+	// What type of storage medium should back this directory.
 	// The default is "" which means to use the node's default medium.
+	// Must be an empty string (default) or Memory.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir
 	// +optional
 	Medium StorageMedium
 	// Total amount of local storage required for this EmptyDir volume.
@@ -660,6 +723,256 @@ type EmptyDirVolumeSource struct {
 	// More info: http://kubernetes.io/docs/user-guide/volumes#emptydir
 	// +optional
 	SizeLimit *resource.Quantity
+}
+
+// Represents a Glusterfs mount that lasts the lifetime of a pod.
+// Glusterfs volumes do not support ownership management or SELinux relabeling.
+type GlusterfsVolumeSource struct {
+	// EndpointsName is the endpoint name that details Glusterfs topology.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	EndpointsName string
+
+	// Path is the Glusterfs volume path.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	Path string
+
+	// ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.
+	// Defaults to false.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	// +optional
+	ReadOnly bool
+}
+
+// Represents a Glusterfs mount that lasts the lifetime of a pod.
+// Glusterfs volumes do not support ownership management or SELinux relabeling.
+type GlusterfsPersistentVolumeSource struct {
+	// EndpointsName is the endpoint name that details Glusterfs topology.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	EndpointsName string
+
+	// Path is the Glusterfs volume path.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	Path string
+
+	// ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.
+	// Defaults to false.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	// +optional
+	ReadOnly bool
+
+	// EndpointsNamespace is the namespace that contains Glusterfs endpoint.
+	// If this field is empty, the EndpointNamespace defaults to the same namespace as the bound PVC.
+	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
+	// +optional
+	EndpointsNamespace *string
+}
+
+// Represents a Rados Block Device mount that lasts the lifetime of a pod.
+// RBD volumes support ownership management and SELinux relabeling.
+type RBDVolumeSource struct {
+	// A collection of Ceph monitors.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	CephMonitors []string
+	// The rados image name.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	RBDImage string
+	// Filesystem type of the volume that you want to mount.
+	// Tip: Ensure that the filesystem type is supported by the host operating system.
+	// Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
+	// +optional
+	FSType string
+	// The rados pool name.
+	// Default is rbd.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	RBDPool string
+	// The rados user name.
+	// Default is admin.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	RadosUser string
+	// Keyring is the path to key ring for RBDUser.
+	// Default is /etc/ceph/keyring.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	Keyring string
+	// SecretRef is name of the authentication secret for RBDUser. If provided
+	// overrides keyring.
+	// Default is nil.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	SecretRef *LocalObjectReference
+	// ReadOnly here will force the ReadOnly setting in VolumeMounts.
+	// Defaults to false.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	ReadOnly bool
+}
+
+// Represents a Rados Block Device mount that lasts the lifetime of a pod.
+// RBD volumes support ownership management and SELinux relabeling.
+type RBDPersistentVolumeSource struct {
+	// A collection of Ceph monitors.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	CephMonitors []string
+	// The rados image name.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	RBDImage string
+	// Filesystem type of the volume that you want to mount.
+	// Tip: Ensure that the filesystem type is supported by the host operating system.
+	// Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
+	// +optional
+	FSType string
+	// The rados pool name.
+	// Default is rbd.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	RBDPool string
+	// The rados user name.
+	// Default is admin.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	RadosUser string
+	// Keyring is the path to key ring for RBDUser.
+	// Default is /etc/ceph/keyring.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	Keyring string
+	// SecretRef is name of the authentication secret for RBDUser. If provided
+	// overrides keyring.
+	// Default is nil.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	SecretRef *SecretReference
+	// ReadOnly here will force the ReadOnly setting in VolumeMounts.
+	// Defaults to false.
+	// More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
+	// +optional
+	ReadOnly bool
+}
+
+// Represents a cinder volume resource in Openstack.
+// A Cinder volume must exist before mounting to a container.
+// The volume must also be in the same region as the kubelet.
+// Cinder volumes support ownership management and SELinux relabeling.
+type CinderVolumeSource struct {
+	// volume id used to identify the volume in cinder.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+	VolumeID string
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+	// +optional
+	FSType string
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+	// +optional
+	ReadOnly bool
+	// Optional: points to a secret object containing parameters used to connect
+	// to OpenStack.
+	// +optional
+	SecretRef *LocalObjectReference
+}
+
+// Represents a cinder volume resource in Openstack.
+// A Cinder volume must exist before mounting to a container.
+// The volume must also be in the same region as the kubelet.
+// Cinder volumes support ownership management and SELinux relabeling.
+type CinderPersistentVolumeSource struct {
+	// volume id used to identify the volume in cinder.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+	VolumeID string
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// More info: https://examples.k8s.io/mysql-cinder-pd/README.md
+	// +optional
+	FSType string
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// +optional
+	ReadOnly bool
+	// Optional: points to a secret object containing parameters used to connect
+	// to OpenStack.
+	// +optional
+	SecretRef *SecretReference
+}
+
+// Represents a Ceph Filesystem mount that lasts the lifetime of a pod
+// Cephfs volumes do not support ownership management or SELinux relabeling.
+type CephFSVolumeSource struct {
+	// Required: Monitors is a collection of Ceph monitors
+	// More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
+	Monitors []string
+	// Optional: Used as the mounted root, rather than the full Ceph tree, default is /
+	// +optional
+	Path string
+	// Optional: User is the rados user name, default is admin
+	// +optional
+	User string
+	// Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
+	// +optional
+	SecretFile string
+	// Optional: SecretRef is reference to the authentication secret for User, default is empty.
+	// +optional
+	SecretRef *LocalObjectReference
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// +optional
+	ReadOnly bool
+}
+
+// SecretReference represents a Secret Reference. It has enough information to retrieve secret
+// in any namespace
+type SecretReference struct {
+	// Name is unique within a namespace to reference a secret resource.
+	// +optional
+	Name string
+	// Namespace defines the space within which the secret name must be unique.
+	// +optional
+	Namespace string
+}
+
+// CephFSPersistentVolumeSource represents a Ceph Filesystem mount that lasts the lifetime of a pod
+// Cephfs volumes do not support ownership management or SELinux relabeling.
+type CephFSPersistentVolumeSource struct {
+	// Required: Monitors is a collection of Ceph monitors
+	Monitors []string
+	// Optional: Used as the mounted root, rather than the full Ceph tree, default is /
+	// +optional
+	Path string
+	// Optional: User is the rados user name, default is admin
+	// +optional
+	User string
+	// Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
+	// +optional
+	SecretFile string
+	// Optional: SecretRef is reference to the authentication secret for User, default is empty.
+	// +optional
+	SecretRef *SecretReference
+	// Optional: Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// +optional
+	ReadOnly bool
+}
+
+// FlockerVolumeSource represents a Flocker volume mounted by the Flocker agent.
+// One and only one of datasetName and datasetUUID should be set.
+// Flocker volumes do not support ownership management or SELinux relabeling.
+type FlockerVolumeSource struct {
+	// Name of the dataset stored as metadata -> name on the dataset for Flocker
+	// should be considered as deprecated
+	// +optional
+	DatasetName string
+	// UUID of the dataset. This is unique identifier of a Flocker dataset
+	// +optional
+	DatasetUUID string
 }
 
 // StorageMedium defines ways that storage can be allocated to a volume.
@@ -711,126 +1024,36 @@ type GCEPersistentDiskVolumeSource struct {
 	ReadOnly bool
 }
 
-// ISCSIVolumeSource represents an ISCSI disk.
-// ISCSI volumes can only be mounted as read/write once.
-// ISCSI volumes support ownership management and SELinux relabeling.
-type ISCSIVolumeSource struct {
-	// Required: iSCSI target portal
-	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
-	// +optional
-	TargetPortal string
-	// Required:  target iSCSI Qualified Name
-	// +optional
-	IQN string
-	// Required: iSCSI target lun number
-	// +optional
-	Lun int32
-	// Optional: Defaults to 'default' (tcp). iSCSI interface name that uses an iSCSI transport.
-	// +optional
-	ISCSIInterface string
-	// Filesystem type to mount.
-	// Must be a filesystem type supported by the host operating system.
-	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-	// TODO: how do we prevent errors in the filesystem from compromising the machine
-	// +optional
-	FSType string
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-	// Optional: list of iSCSI target portal ips for high availability.
-	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
-	// +optional
-	Portals []string
-	// Optional: whether support iSCSI Discovery CHAP authentication
-	// +optional
-	DiscoveryCHAPAuth bool
-	// Optional: whether support iSCSI Session CHAP authentication
-	// +optional
-	SessionCHAPAuth bool
-	// Optional: CHAP secret for iSCSI target and initiator authentication.
-	// The secret is used if either DiscoveryCHAPAuth or SessionCHAPAuth is true
-	// +optional
-	SecretRef *LocalObjectReference
-	// Optional: Custom initiator name per volume.
-	// If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
-	// <target portal>:<volume name> will be created for the connection.
-	// +optional
-	InitiatorName *string
-}
+// QuobyteVolumeSource represents a Quobyte mount that lasts the lifetime of a pod.
+// Quobyte volumes do not support ownership management or SELinux relabeling.
+type QuobyteVolumeSource struct {
+	// Registry represents a single or multiple Quobyte Registry services
+	// specified as a string as host:port pair (multiple entries are separated with commas)
+	// which acts as the central registry for volumes
+	Registry string
 
-// ISCSIPersistentVolumeSource represents an ISCSI disk.
-// ISCSI volumes can only be mounted as read/write once.
-// ISCSI volumes support ownership management and SELinux relabeling.
-type ISCSIPersistentVolumeSource struct {
-	// Required: iSCSI target portal
-	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
-	// +optional
-	TargetPortal string
-	// Required:  target iSCSI Qualified Name
-	// +optional
-	IQN string
-	// Required: iSCSI target lun number
-	// +optional
-	Lun int32
-	// Optional: Defaults to 'default' (tcp). iSCSI interface name that uses an iSCSI transport.
-	// +optional
-	ISCSIInterface string
-	// Filesystem type to mount.
-	// Must be a filesystem type supported by the host operating system.
-	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-	// TODO: how do we prevent errors in the filesystem from compromising the machine
-	// +optional
-	FSType string
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-	// Optional: list of iSCSI target portal ips for high availability.
-	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
-	// +optional
-	Portals []string
-	// Optional: whether support iSCSI Discovery CHAP authentication
-	// +optional
-	DiscoveryCHAPAuth bool
-	// Optional: whether support iSCSI Session CHAP authentication
-	// +optional
-	SessionCHAPAuth bool
-	// Optional: CHAP secret for iSCSI target and initiator authentication.
-	// The secret is used if either DiscoveryCHAPAuth or SessionCHAPAuth is true
-	// +optional
-	SecretRef *SecretReference
-	// Optional: Custom initiator name per volume.
-	// If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
-	// <target portal>:<volume name> will be created for the connection.
-	// +optional
-	InitiatorName *string
-}
+	// Volume is a string that references an already created Quobyte volume by name.
+	Volume string
 
-// FCVolumeSource represents a Fibre Channel volume.
-// Fibre Channel volumes can only be mounted as read/write once.
-// Fibre Channel volumes support ownership management and SELinux relabeling.
-type FCVolumeSource struct {
-	// Optional: FC target worldwide names (WWNs)
-	// +optional
-	TargetWWNs []string
-	// Optional: FC target lun number
-	// +optional
-	Lun *int32
-	// Filesystem type to mount.
-	// Must be a filesystem type supported by the host operating system.
-	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-	// TODO: how do we prevent errors in the filesystem from compromising the machine
-	// +optional
-	FSType string
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
+	// Defaults to false (read/write). ReadOnly here will force
+	// the Quobyte to be mounted with read-only permissions
 	// +optional
 	ReadOnly bool
-	// Optional: FC volume World Wide Identifiers (WWIDs)
-	// Either WWIDs or TargetWWNs and Lun must be set, but not both simultaneously.
+
+	// User to map volume access to
+	// Defaults to the root user
 	// +optional
-	WWIDs []string
+	User string
+
+	// Group to map volume access to
+	// Default is no group
+	// +optional
+	Group string
+
+	// Tenant owning the given Quobyte volume in the Backend
+	// Used with dynamically provisioned Quobyte volumes, value is set by the plugin
+	// +optional
+	Tenant string
 }
 
 // FlexPersistentVolumeSource represents a generic persistent volume resource that is
@@ -1000,294 +1223,126 @@ type NFSVolumeSource struct {
 	ReadOnly bool
 }
 
-// QuobyteVolumeSource represents a Quobyte mount that lasts the lifetime of a pod.
-// Quobyte volumes do not support ownership management or SELinux relabeling.
-type QuobyteVolumeSource struct {
-	// Registry represents a single or multiple Quobyte Registry services
-	// specified as a string as host:port pair (multiple entries are separated with commas)
-	// which acts as the central registry for volumes
-	Registry string
-
-	// Volume is a string that references an already created Quobyte volume by name.
-	Volume string
-
-	// Defaults to false (read/write). ReadOnly here will force
-	// the Quobyte to be mounted with read-only permissions
+// ISCSIVolumeSource represents an ISCSI disk.
+// ISCSI volumes can only be mounted as read/write once.
+// ISCSI volumes support ownership management and SELinux relabeling.
+type ISCSIVolumeSource struct {
+	// iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port
+	// is other than default (typically TCP ports 860 and 3260).
 	// +optional
-	ReadOnly bool
-
-	// User to map volume access to
-	// Defaults to the root user
+	TargetPortal string
+	// Target iSCSI Qualified Name.
 	// +optional
-	User string
-
-	// Group to map volume access to
-	// Default is no group
+	IQN string
+	// Required: iSCSI target lun number
 	// +optional
-	Group string
-
-	// Tenant owning the given Quobyte volume in the Backend
-	// Used with dynamically provisioned Quobyte volumes, value is set by the plugin
+	Lun int32
+	// Optional: Defaults to 'default' (tcp). iSCSI interface name that uses an iSCSI transport.
 	// +optional
-	Tenant string
-}
-
-// GlusterfsVolumeSource represents a Glusterfs mount that lasts the lifetime of a pod.
-// Glusterfs volumes do not support ownership management or SELinux relabeling.
-type GlusterfsVolumeSource struct {
-	// Required: EndpointsName is the endpoint name that details Glusterfs topology
-	EndpointsName string
-
-	// Required: Path is the Glusterfs volume path
-	Path string
-
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the Glusterfs to be mounted with read-only permissions
-	// +optional
-	ReadOnly bool
-}
-
-// GlusterfsPersistentVolumeSource represents a Glusterfs mount that lasts the lifetime of a pod.
-// Glusterfs volumes do not support ownership management or SELinux relabeling.
-type GlusterfsPersistentVolumeSource struct {
-	// EndpointsName is the endpoint name that details Glusterfs topology.
-	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
-	EndpointsName string
-
-	// Path is the Glusterfs volume path.
-	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
-	Path string
-
-	// ReadOnly here will force the Glusterfs volume to be mounted with read-only permissions.
-	// Defaults to false.
-	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
-	// +optional
-	ReadOnly bool
-
-	// EndpointsNamespace is the namespace that contains Glusterfs endpoint.
-	// If this field is empty, the EndpointNamespace defaults to the same namespace as the bound PVC.
-	// More info: https://examples.k8s.io/volumes/glusterfs/README.md#create-a-pod
-	// +optional
-	EndpointsNamespace *string
-}
-
-// RBDVolumeSource represents a Rados Block Device mount that lasts the lifetime of a pod.
-// RBD volumes support ownership management and SELinux relabeling.
-type RBDVolumeSource struct {
-	// Required: CephMonitors is a collection of Ceph monitors
-	CephMonitors []string
-	// Required: RBDImage is the rados image name
-	RBDImage string
+	ISCSIInterface string
 	// Filesystem type to mount.
 	// Must be a filesystem type supported by the host operating system.
 	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 	// TODO: how do we prevent errors in the filesystem from compromising the machine
 	// +optional
 	FSType string
-	// Optional: RadosPool is the rados pool name,default is rbd
-	// +optional
-	RBDPool string
-	// Optional: RBDUser is the rados user name, default is admin
-	// +optional
-	RadosUser string
-	// Optional: Keyring is the path to key ring for RBDUser, default is /etc/ceph/keyring
-	// +optional
-	Keyring string
-	// Optional: SecretRef is name of the authentication secret for RBDUser, default is nil.
-	// +optional
-	SecretRef *LocalObjectReference
 	// Optional: Defaults to false (read/write). ReadOnly here will force
 	// the ReadOnly setting in VolumeMounts.
 	// +optional
 	ReadOnly bool
+	// Optional: list of iSCSI target portal ips for high availability.
+	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
+	// +optional
+	Portals []string
+	// Optional: whether support iSCSI Discovery CHAP authentication
+	// +optional
+	DiscoveryCHAPAuth bool
+	// Optional: whether support iSCSI Session CHAP authentication
+	// +optional
+	SessionCHAPAuth bool
+	// Optional: CHAP secret for iSCSI target and initiator authentication.
+	// The secret is used if either DiscoveryCHAPAuth or SessionCHAPAuth is true
+	// +optional
+	SecretRef *LocalObjectReference
+	// Optional: Custom initiator name per volume.
+	// If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
+	// <target portal>:<volume name> will be created for the connection.
+	// +optional
+	InitiatorName *string
 }
 
-// RBDPersistentVolumeSource represents a Rados Block Device mount that lasts the lifetime of a pod.
-// RBD volumes support ownership management and SELinux relabeling.
-type RBDPersistentVolumeSource struct {
-	// Required: CephMonitors is a collection of Ceph monitors
-	CephMonitors []string
-	// Required: RBDImage is the rados image name
-	RBDImage string
+// ISCSIPersistentVolumeSource represents an ISCSI disk.
+// ISCSI volumes can only be mounted as read/write once.
+// ISCSI volumes support ownership management and SELinux relabeling.
+type ISCSIPersistentVolumeSource struct {
+	// Required: iSCSI target portal
+	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
+	// +optional
+	TargetPortal string
+	// Required:  target iSCSI Qualified Name
+	// +optional
+	IQN string
+	// Required: iSCSI target lun number
+	// +optional
+	Lun int32
+	// Optional: Defaults to 'default' (tcp). iSCSI interface name that uses an iSCSI transport.
+	// +optional
+	ISCSIInterface string
 	// Filesystem type to mount.
 	// Must be a filesystem type supported by the host operating system.
 	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
 	// TODO: how do we prevent errors in the filesystem from compromising the machine
 	// +optional
 	FSType string
-	// Optional: RadosPool is the rados pool name,default is rbd
-	// +optional
-	RBDPool string
-	// Optional: RBDUser is the rados user name, default is admin
-	// +optional
-	RadosUser string
-	// Optional: Keyring is the path to key ring for RBDUser, default is /etc/ceph/keyring
-	// +optional
-	Keyring string
-	// Optional: SecretRef is reference to the authentication secret for User, default is empty.
-	// +optional
-	SecretRef *SecretReference
 	// Optional: Defaults to false (read/write). ReadOnly here will force
 	// the ReadOnly setting in VolumeMounts.
 	// +optional
 	ReadOnly bool
+	// Optional: list of iSCSI target portal ips for high availability.
+	// the portal is either an IP or ip_addr:port if port is other than default (typically TCP ports 860 and 3260)
+	// +optional
+	Portals []string
+	// Optional: whether support iSCSI Discovery CHAP authentication
+	// +optional
+	DiscoveryCHAPAuth bool
+	// Optional: whether support iSCSI Session CHAP authentication
+	// +optional
+	SessionCHAPAuth bool
+	// Optional: CHAP secret for iSCSI target and initiator authentication.
+	// The secret is used if either DiscoveryCHAPAuth or SessionCHAPAuth is true
+	// +optional
+	SecretRef *SecretReference
+	// Optional: Custom initiator name per volume.
+	// If initiatorName is specified with iscsiInterface simultaneously, new iSCSI interface
+	// <target portal>:<volume name> will be created for the connection.
+	// +optional
+	InitiatorName *string
 }
 
-// CinderVolumeSource represents a cinder volume resource in Openstack. A Cinder volume
-// must exist before mounting to a container. The volume must also be
-// in the same region as the kubelet. Cinder volumes support ownership
-// management and SELinux relabeling.
-type CinderVolumeSource struct {
-	// Unique id of the volume used to identify the cinder volume.
-	VolumeID string
+// FCVolumeSource represents a Fibre Channel volume.
+// Fibre Channel volumes can only be mounted as read/write once.
+// Fibre Channel volumes support ownership management and SELinux relabeling.
+type FCVolumeSource struct {
+	// Optional: FC target worldwide names (WWNs)
+	// +optional
+	TargetWWNs []string
+	// Optional: FC target lun number
+	// +optional
+	Lun *int32
 	// Filesystem type to mount.
 	// Must be a filesystem type supported by the host operating system.
 	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	// TODO: how do we prevent errors in the filesystem from compromising the machine
 	// +optional
 	FSType string
 	// Optional: Defaults to false (read/write). ReadOnly here will force
 	// the ReadOnly setting in VolumeMounts.
 	// +optional
 	ReadOnly bool
-	// Optional: points to a secret object containing parameters used to connect
-	// to OpenStack.
+	// Optional: FC volume World Wide Identifiers (WWIDs)
+	// Either WWIDs or TargetWWNs and Lun must be set, but not both simultaneously.
 	// +optional
-	SecretRef *LocalObjectReference
-}
-
-// CinderPersistentVolumeSource represents a cinder volume resource in Openstack. A Cinder volume
-// must exist before mounting to a container. The volume must also be
-// in the same region as the kubelet. Cinder volumes support ownership
-// management and SELinux relabeling.
-type CinderPersistentVolumeSource struct {
-	// Unique id of the volume used to identify the cinder volume.
-	VolumeID string
-	// Filesystem type to mount.
-	// Must be a filesystem type supported by the host operating system.
-	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-	// +optional
-	FSType string
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-	// Optional: points to a secret object containing parameters used to connect
-	// to OpenStack.
-	// +optional
-	SecretRef *SecretReference
-}
-
-// CephFSVolumeSource represents a Ceph Filesystem mount that lasts the lifetime of a pod
-// Cephfs volumes do not support ownership management or SELinux relabeling.
-type CephFSVolumeSource struct {
-	// Required: Monitors is a collection of Ceph monitors
-	Monitors []string
-	// Optional: Used as the mounted root, rather than the full Ceph tree, default is /
-	// +optional
-	Path string
-	// Optional: User is the rados user name, default is admin
-	// +optional
-	User string
-	// Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
-	// +optional
-	SecretFile string
-	// Optional: SecretRef is reference to the authentication secret for User, default is empty.
-	// +optional
-	SecretRef *LocalObjectReference
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-}
-
-// SecretReference represents a Secret Reference. It has enough information to retrieve secret
-// in any namespace
-type SecretReference struct {
-	// Name is unique within a namespace to reference a secret resource.
-	// +optional
-	Name string
-	// Namespace defines the space within which the secret name must be unique.
-	// +optional
-	Namespace string
-}
-
-// CephFSPersistentVolumeSource represents a Ceph Filesystem mount that lasts the lifetime of a pod
-// Cephfs volumes do not support ownership management or SELinux relabeling.
-type CephFSPersistentVolumeSource struct {
-	// Required: Monitors is a collection of Ceph monitors
-	Monitors []string
-	// Optional: Used as the mounted root, rather than the full Ceph tree, default is /
-	// +optional
-	Path string
-	// Optional: User is the rados user name, default is admin
-	// +optional
-	User string
-	// Optional: SecretFile is the path to key ring for User, default is /etc/ceph/user.secret
-	// +optional
-	SecretFile string
-	// Optional: SecretRef is reference to the authentication secret for User, default is empty.
-	// +optional
-	SecretRef *SecretReference
-	// Optional: Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-}
-
-// FlockerVolumeSource represents a Flocker volume mounted by the Flocker agent.
-// One and only one of datasetName and datasetUUID should be set.
-// Flocker volumes do not support ownership management or SELinux relabeling.
-type FlockerVolumeSource struct {
-	// Name of the dataset stored as metadata -> name on the dataset for Flocker
-	// should be considered as deprecated
-	// +optional
-	DatasetName string
-	// UUID of the dataset. This is unique identifier of a Flocker dataset
-	// +optional
-	DatasetUUID string
-}
-
-// DownwardAPIVolumeSource represents a volume containing downward API info.
-// Downward API volumes support ownership management and SELinux relabeling.
-type DownwardAPIVolumeSource struct {
-	// Items is a list of DownwardAPIVolume file
-	// +optional
-	Items []DownwardAPIVolumeFile
-	// Mode bits to use on created files by default. Must be a value between
-	// 0 and 0777.
-	// Directories within the path are not affected by this setting.
-	// This might be in conflict with other options that affect the file
-	// mode, like fsGroup, and the result can be other mode bits set.
-	// +optional
-	DefaultMode *int32
-}
-
-// DownwardAPIVolumeFile represents a single file containing information from the downward API
-type DownwardAPIVolumeFile struct {
-	// Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'
-	Path string
-	// Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
-	// +optional
-	FieldRef *ObjectFieldSelector
-	// Selects a resource of the container: only resources limits and requests
-	// (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
-	// +optional
-	ResourceFieldRef *ResourceFieldSelector
-	// Optional: mode bits to use on this file, must be a value between 0
-	// and 0777. If not specified, the volume defaultMode will be used.
-	// This might be in conflict with other options that affect the file
-	// mode, like fsGroup, and the result can be other mode bits set.
-	// +optional
-	Mode *int32
-}
-
-// DownwardAPIProjection represents downward API info for projecting into a projected volume.
-// Note that this is identical to a downwardAPI volume source without the default
-// mode.
-type DownwardAPIProjection struct {
-	// Items is a list of DownwardAPIVolume file
-	// +optional
-	Items []DownwardAPIVolumeFile
+	WWIDs []string
 }
 
 // AzureFileVolumeSource azureFile represents an Azure File Service mount on the host and bind mount to the pod.
@@ -1345,21 +1400,6 @@ type PhotonPersistentDiskVolumeSource struct {
 	FSType string
 }
 
-// PortworxVolumeSource represents a Portworx volume resource.
-type PortworxVolumeSource struct {
-	// VolumeID uniquely identifies a Portworx volume
-	VolumeID string
-	// FSType represents the filesystem type to mount
-	// Must be a filesystem type supported by the host operating system.
-	// Ex. "ext4", "xfs". Implicitly inferred to be "ext4" if unspecified.
-	// +optional
-	FSType string
-	// Defaults to false (read/write). ReadOnly here will force
-	// the ReadOnly setting in VolumeMounts.
-	// +optional
-	ReadOnly bool
-}
-
 // AzureDataDiskCachingMode defines the caching mode for Azure data disk
 type AzureDataDiskCachingMode string
 
@@ -1397,6 +1437,21 @@ type AzureDiskVolumeSource struct {
 	ReadOnly *bool
 	// Expected values Shared: multiple blob disks per storage account  Dedicated: single blob disk per storage account  Managed: azure managed data disk (only in managed availability set). defaults to shared
 	Kind *AzureDataDiskKind
+}
+
+// PortworxVolumeSource represents a Portworx volume resource.
+type PortworxVolumeSource struct {
+	// VolumeID uniquely identifies a Portworx volume
+	VolumeID string
+	// FSType represents the filesystem type to mount
+	// Must be a filesystem type supported by the host operating system.
+	// Ex. "ext4", "xfs". Implicitly inferred to be "ext4" if unspecified.
+	// +optional
+	FSType string
+	// Defaults to false (read/write). ReadOnly here will force
+	// the ReadOnly setting in VolumeMounts.
+	// +optional
+	ReadOnly bool
 }
 
 // ScaleIOVolumeSource represents a persistent ScaleIO volume
@@ -2049,6 +2104,20 @@ type TCPSocketAction struct {
 	Host string
 }
 
+type GRPCAction struct {
+	// Port number of the gRPC service.
+	// Note: Number must be in the range 1 to 65535.
+	Port int32
+
+	// Service is the name of the service to place in the gRPC HealthCheckRequest
+	// (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+	//
+	// If this is not specified, the default behavior is to probe the server's overall health status.
+	// +optional
+	Service *string
+}
+
+
 // ExecAction describes a "run in container" action.
 type ExecAction struct {
 	// Command is the command line to execute inside the container, the working directory for the
@@ -2210,6 +2279,13 @@ type Container struct {
 	// Required.
 	// +optional
 	TerminationMessagePath string
+	// Indicate how the termination message should be populated. File will use the contents of
+	// terminationMessagePath to populate the container status message on both success and failure.
+	// FallbackToLogsOnError will use the last chunk of container log output if the termination
+	// message file is empty and the container exited with an error.
+	// The log output is limited to 2048 bytes or 80 lines, whichever is smaller.
+	// Defaults to File.
+	// Cannot be updated.
 	// +optional
 	TerminationMessagePolicy TerminationMessagePolicy
 	// Required: Policy for pulling images for this container
@@ -2263,19 +2339,6 @@ type LifecycleHandler struct {
 	// lifecycle hooks will fail in runtime when tcp handler is specified.
 	// +optional
 	TCPSocket *TCPSocketAction
-}
-
-type GRPCAction struct {
-	// Port number of the gRPC service.
-	// Note: Number must be in the range 1 to 65535.
-	Port int32
-
-	// Service is the name of the service to place in the gRPC HealthCheckRequest
-	// (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-	//
-	// If this is not specified, the default behavior is to probe the server's overall health status.
-	// +optional
-	Service *string
 }
 
 // Lifecycle describes actions that the management system should take in response to container lifecycle
@@ -2366,6 +2429,7 @@ type ContainerStatus struct {
 	Name string
 	// +optional
 	State ContainerState
+	// Details about the container's last termination condition.
 	// +optional
 	LastTerminationState ContainerState
 	// Ready specifies whether the container has passed its readiness check.
@@ -2400,7 +2464,7 @@ const (
 	PodFailed PodPhase = "Failed"
 	// PodUnknown means that for some reason the state of the pod could not be obtained, typically due
 	// to an error in communicating with the host of the pod.
-	// Deprecated in v1.21: It isn't being set since 2015 (74da3b14b0c0f658b3bb8d2def5094686d0e9095)
+	// Deprecated: It isn't being set since 2015 (74da3b14b0c0f658b3bb8d2def5094686d0e9095)
 	PodUnknown PodPhase = "Unknown"
 )
 
@@ -2409,18 +2473,22 @@ type PodConditionType string
 
 // These are valid conditions of pod.
 const (
-	// PodScheduled represents status of the scheduling process for this pod.
-	PodScheduled PodConditionType = "PodScheduled"
+	// ContainersReady indicates whether all containers in the pod are ready.
+	ContainersReady PodConditionType = "ContainersReady"
+	// PodInitialized means that all init containers in the pod have started successfully.
+	PodInitialized PodConditionType = "Initialized"
 	// PodReady means the pod is able to service requests and should be added to the
 	// load balancing pools of all matching services.
 	PodReady PodConditionType = "Ready"
-	// PodInitialized means that all init containers in the pod have started successfully.
-	PodInitialized PodConditionType = "Initialized"
+	// PodScheduled represents status of the scheduling process for this pod.
+	PodScheduled PodConditionType = "PodScheduled"
+)
+
+// These are reasons for a pod's transition to a condition.
+const (
 	// PodReasonUnschedulable reason in PodScheduled PodCondition means that the scheduler
 	// can't schedule the pod right now, for example due to insufficient resources in the cluster.
 	PodReasonUnschedulable = "Unschedulable"
-	// ContainersReady indicates whether all containers in the pod are ready.
-	ContainersReady PodConditionType = "ContainersReady"
 )
 
 // PodCondition represents pod's condition
@@ -2449,17 +2517,6 @@ const (
 	RestartPolicyOnFailure RestartPolicy = "OnFailure"
 	RestartPolicyNever     RestartPolicy = "Never"
 )
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// PodList is a list of Pods.
-type PodList struct {
-	metav1.TypeMeta
-	// +optional
-	metav1.ListMeta
-
-	Items []Pod
-}
 
 // DNSPolicy defines how a pod's DNS will be configured.
 type DNSPolicy string
@@ -2915,12 +2972,6 @@ type PodSpec struct {
 	// The higher the value, the higher the priority.
 	// +optional
 	Priority *int32
-	// PreemptionPolicy is the Policy for preempting pods with lower priority.
-	// One of Never, PreemptLowerPriority.
-	// Defaults to PreemptLowerPriority if unset.
-	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
-	// +optional
-	PreemptionPolicy *PreemptionPolicy
 	// Specifies the DNS parameters of a pod.
 	// Parameters specified here will be merged to the generated DNS
 	// configuration based on DNSPolicy.
@@ -2939,6 +2990,13 @@ type PodSpec struct {
 	// More info: https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class
 	// +optional
 	RuntimeClassName *string
+	// PreemptionPolicy is the Policy for preempting pods with lower priority.
+	// One of Never, PreemptLowerPriority.
+	// Defaults to PreemptLowerPriority if unset.
+	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
+	// +optional
+	PreemptionPolicy *PreemptionPolicy
+
 	// Overhead represents the resource overhead associated with running a pod for a given RuntimeClass.
 	// This field will be autopopulated at admission time by the RuntimeClass admission controller. If
 	// the RuntimeClass admission controller is enabled, overhead must not be set in Pod create requests.
@@ -3128,6 +3186,12 @@ type PodSecurityContext struct {
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
 	FSGroup *int64
+	// Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
+	// sysctls (by the container runtime) might fail to launch.
+	// Note that this field cannot be set when spec.os.name is windows.
+	// +optional
+	Sysctls []Sysctl
+
 	// fsGroupChangePolicy defines behavior of changing ownership and permission of the volume
 	// before being exposed inside Pod. This field will only apply to
 	// volume types which support fsGroup based ownership(and permissions).
@@ -3137,11 +3201,6 @@ type PodSecurityContext struct {
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
 	FSGroupChangePolicy *PodFSGroupChangePolicy
-	// Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported
-	// sysctls (by the container runtime) might fail to launch.
-	// Note that this field cannot be set when spec.os.name is windows.
-	// +optional
-	Sysctls []Sysctl
 	// The seccomp options to use by the containers in this pod.
 	// Note that this field cannot be set when spec.os.name is windows.
 	// +optional
@@ -3423,6 +3482,17 @@ type Pod struct {
 	// to date.
 	// +optional
 	Status PodStatus
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PodList is a list of Pods.
+type PodList struct {
+	metav1.TypeMeta
+	// +optional
+	metav1.ListMeta
+
+	Items []Pod
 }
 
 // PodTemplateSpec describes the data a pod should have when created from a template
@@ -4518,12 +4588,6 @@ type NodeList struct {
 	Items []Node
 }
 
-// NamespaceSpec describes the attributes on a Namespace
-type NamespaceSpec struct {
-	// Finalizers is an opaque list of values that must be empty to permanently remove object from storage
-	Finalizers []FinalizerName
-}
-
 // FinalizerName is the name identifying a finalizer during namespace lifecycle.
 type FinalizerName string
 
@@ -4532,6 +4596,13 @@ type FinalizerName string
 const (
 	FinalizerKubernetes FinalizerName = "kubernetes"
 )
+
+// NamespaceSpec describes the attributes on a Namespace.
+type NamespaceSpec struct {
+	// Finalizers is an opaque list of values that must be empty to permanently remove object from storage.
+	// More info: https://kubernetes.io/docs/tasks/administer-cluster/namespaces/
+	Finalizers []FinalizerName
+}
 
 // NamespaceStatus is information about the current status of a Namespace.
 type NamespaceStatus struct {
@@ -5066,7 +5137,7 @@ const (
 	ResourceQuotaScopeNotBestEffort ResourceQuotaScope = "NotBestEffort"
 	// Match all pod objects that have priority class mentioned
 	ResourceQuotaScopePriorityClass ResourceQuotaScope = "PriorityClass"
-	// Match all pod objects that have cross-namespace pod (anti)affinity mentioned
+	// Match all pod objects that have cross-namespace pod (anti)affinity mentioned.
 	// This is a beta feature enabled by the PodAffinityNamespaceSelector feature flag.
 	ResourceQuotaScopeCrossNamespacePodAffinity ResourceQuotaScope = "CrossNamespacePodAffinity"
 )
@@ -5180,7 +5251,7 @@ type Secret struct {
 	// base64 encoded string, representing the arbitrary (possibly non-string)
 	// data value here.
 	// +optional
-	Data map[string][]byte `datapolicy:"password,security-key,token"`
+	Data map[string][]byte
 
 	// Used to facilitate programmatic handling of secret data.
 	// More info: https://kubernetes.io/docs/concepts/configuration/secret/#secret-types
@@ -5416,6 +5487,49 @@ type ComponentStatusList struct {
 	metav1.ListMeta
 
 	Items []ComponentStatus
+}
+
+// DownwardAPIVolumeSource represents a volume containing downward API info.
+// Downward API volumes support ownership management and SELinux relabeling.
+type DownwardAPIVolumeSource struct {
+	// Items is a list of DownwardAPIVolume file
+	// +optional
+	Items []DownwardAPIVolumeFile
+	// Mode bits to use on created files by default. Must be a value between
+	// 0 and 0777.
+	// Directories within the path are not affected by this setting.
+	// This might be in conflict with other options that affect the file
+	// mode, like fsGroup, and the result can be other mode bits set.
+	// +optional
+	DefaultMode *int32
+}
+
+// DownwardAPIVolumeFile represents a single file containing information from the downward API
+type DownwardAPIVolumeFile struct {
+	// Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'
+	Path string
+	// Required: Selects a field of the pod: only annotations, labels, name, namespace and uid are supported.
+	// +optional
+	FieldRef *ObjectFieldSelector
+	// Selects a resource of the container: only resources limits and requests
+	// (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+	// +optional
+	ResourceFieldRef *ResourceFieldSelector
+	// Optional: mode bits to use on this file, must be a value between 0
+	// and 0777. If not specified, the volume defaultMode will be used.
+	// This might be in conflict with other options that affect the file
+	// mode, like fsGroup, and the result can be other mode bits set.
+	// +optional
+	Mode *int32
+}
+
+// DownwardAPIProjection represents downward API info for projecting into a projected volume.
+// Note that this is identical to a downwardAPI volume source without the default
+// mode.
+type DownwardAPIProjection struct {
+	// Items is a list of DownwardAPIVolume file
+	// +optional
+	Items []DownwardAPIVolumeFile
 }
 
 // SecurityContext holds security configuration that will be applied to a container.
