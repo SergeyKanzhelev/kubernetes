@@ -385,10 +385,6 @@ func TestAuthorizerSharedResources(t *testing.T) {
 	}
 	g.AddPod(pod3)
 
-	g.SetNodeConfigMap("node1", "shared-configmap", "ns1")
-	g.SetNodeConfigMap("node2", "shared-configmap", "ns1")
-	g.SetNodeConfigMap("node3", "configmap", "ns1")
-
 	testcases := []struct {
 		User          user.Info
 		Secret        string
@@ -834,14 +830,6 @@ func generate(opts *sampleDataOpts) ([]*corev1.Node, []*corev1.Pod, []*corev1.Pe
 		nodes = append(nodes, &corev1.Node{
 			ObjectMeta: metav1.ObjectMeta{Name: nodeName},
 			Spec: corev1.NodeSpec{
-				ConfigSource: &corev1.NodeConfigSource{
-					ConfigMap: &corev1.ConfigMapNodeConfigSource{
-						Name:             name,
-						Namespace:        "ns0",
-						UID:              types.UID(fmt.Sprintf("ns0-%s", name)),
-						KubeletConfigKey: "kubelet",
-					},
-				},
 			},
 		})
 	}

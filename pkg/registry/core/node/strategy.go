@@ -34,11 +34,9 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic"
 	pkgstorage "k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/names"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/apis/core/validation"
-	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/kubelet/client"
 	proxyutil "k8s.io/kubernetes/pkg/proxy/util"
 	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
@@ -94,27 +92,16 @@ func (nodeStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime.Objec
 func dropDisabledFields(node *api.Node, oldNode *api.Node) {
 	// Nodes allow *all* fields, including status, to be set on create.
 	// for create
-	if !utilfeature.DefaultFeatureGate.Enabled(features.DynamicKubeletConfig) && oldNode == nil {
+	if oldNode == nil {
 		node.Spec.ConfigSource = nil
 		node.Status.Config = nil
 	}
 
 	// for update
-	if !utilfeature.DefaultFeatureGate.Enabled(features.DynamicKubeletConfig) && !nodeConfigSourceInUse(oldNode) && oldNode != nil {
+	if oldNode != nil {
 		node.Spec.ConfigSource = nil
 	}
 
-}
-
-// nodeConfigSourceInUse returns true if node's Spec ConfigSource is set(used)
-func nodeConfigSourceInUse(node *api.Node) bool {
-	if node == nil {
-		return false
-	}
-	if node.Spec.ConfigSource != nil {
-		return true
-	}
-	return false
 }
 
 // Validate validates a new node.
@@ -125,7 +112,7 @@ func (nodeStrategy) Validate(ctx context.Context, obj runtime.Object) field.Erro
 
 // WarningsOnCreate returns warnings for the creation of the given object.
 func (nodeStrategy) WarningsOnCreate(ctx context.Context, obj runtime.Object) []string {
-	return dynamicKubeletConfigIsDeprecatedWarning(obj)
+	return nil
 }
 
 // Canonicalize normalizes the object after validation.
@@ -140,7 +127,7 @@ func (nodeStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object)
 
 // WarningsOnUpdate returns warnings for the given update.
 func (nodeStrategy) WarningsOnUpdate(ctx context.Context, obj, old runtime.Object) []string {
-	return dynamicKubeletConfigIsDeprecatedWarning(obj)
+	return nil
 }
 
 func (nodeStrategy) AllowUnconditionalUpdate() bool {
@@ -170,20 +157,7 @@ func (nodeStatusStrategy) PrepareForUpdate(ctx context.Context, obj, old runtime
 	oldNode := old.(*api.Node)
 	newNode.Spec = oldNode.Spec
 
-	if !utilfeature.DefaultFeatureGate.Enabled(features.DynamicKubeletConfig) && !nodeStatusConfigInUse(oldNode) {
-		newNode.Status.Config = nil
-	}
-}
-
-// nodeStatusConfigInUse returns true if node's Status Config is set(used)
-func nodeStatusConfigInUse(node *api.Node) bool {
-	if node == nil {
-		return false
-	}
-	if node.Status.Config != nil {
-		return true
-	}
-	return false
+  newNode.Status.Config = nil
 }
 
 func (nodeStatusStrategy) ValidateUpdate(ctx context.Context, obj, old runtime.Object) field.ErrorList {
@@ -267,15 +241,4 @@ func ResourceLocation(getter ResourceGetter, connection client.ConnectionInfoGet
 
 	// Otherwise, return the requested scheme and port, and the proxy transport
 	return &url.URL{Scheme: schemeReq, Host: net.JoinHostPort(info.Hostname, portReq)}, proxyTransport, nil
-}
-
-func dynamicKubeletConfigIsDeprecatedWarning(obj runtime.Object) []string {
-	newNode := obj.(*api.Node)
-	if newNode.Spec.ConfigSource != nil {
-		var warnings []string
-		// KEP https://github.com/kubernetes/enhancements/issues/281
-		warnings = append(warnings, "spec.configSource: deprecated in v1.22, support removal is planned in v1.23")
-		return warnings
-	}
-	return nil
 }

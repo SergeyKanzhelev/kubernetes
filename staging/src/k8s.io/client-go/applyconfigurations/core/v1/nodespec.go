@@ -83,11 +83,10 @@ func (b *NodeSpecApplyConfiguration) WithTaints(values ...*TaintApplyConfigurati
 	return b
 }
 
-// WithConfigSource sets the ConfigSource field in the declarative configuration to the given value
+// Deprecated: WithConfigSource used to set the ConfigSource field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the ConfigSource field is set to the value of the last call.
 func (b *NodeSpecApplyConfiguration) WithConfigSource(value *NodeConfigSourceApplyConfiguration) *NodeSpecApplyConfiguration {
-	b.ConfigSource = value
 	return b
 }
 

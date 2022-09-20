@@ -5230,13 +5230,6 @@ func ValidateNodeUpdate(node, oldNode *core.Node) field.ErrorList {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec", "providerID"), "node updates may not change providerID except from \"\" to valid"))
 	}
 
-	if node.Spec.ConfigSource != nil {
-		allErrs = append(allErrs, validateNodeConfigSourceSpec(node.Spec.ConfigSource, field.NewPath("spec", "configSource"))...)
-	}
-	if node.Status.Config != nil {
-		allErrs = append(allErrs, validateNodeConfigStatus(node.Status.Config, field.NewPath("status", "config"))...)
-	}
-
 	// update taints
 	if len(node.Spec.Taints) > 0 {
 		allErrs = append(allErrs, validateNodeTaints(node.Spec.Taints, fldPath.Child("taints"))...)
@@ -5252,114 +5245,9 @@ func ValidateNodeUpdate(node, oldNode *core.Node) field.ErrorList {
 	//  2. ProviderID - immutable after first set - checked above
 	//  3. Unschedulable - allowed to change
 	//  4. Taints - allowed to change
-	//  5. ConfigSource - allowed to change (and checked above)
+	//  5. ConfigSource - deprecated and should not be used. Ignored
 	//  6. DoNotUseExternalID - immutable - checked above
 
-	return allErrs
-}
-
-// validation specific to Node.Spec.ConfigSource
-func validateNodeConfigSourceSpec(source *core.NodeConfigSource, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	count := int(0)
-	if source.ConfigMap != nil {
-		count++
-		allErrs = append(allErrs, validateConfigMapNodeConfigSourceSpec(source.ConfigMap, fldPath.Child("configMap"))...)
-	}
-	// add more subfields here in the future as they are added to NodeConfigSource
-
-	// exactly one reference subfield must be non-nil
-	if count != 1 {
-		allErrs = append(allErrs, field.Invalid(fldPath, source, "exactly one reference subfield must be non-nil"))
-	}
-	return allErrs
-}
-
-// validation specific to Node.Spec.ConfigSource.ConfigMap
-func validateConfigMapNodeConfigSourceSpec(source *core.ConfigMapNodeConfigSource, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	// uid and resourceVersion must not be set in spec
-	if string(source.UID) != "" {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("uid"), "uid must not be set in spec"))
-	}
-	if source.ResourceVersion != "" {
-		allErrs = append(allErrs, field.Forbidden(fldPath.Child("resourceVersion"), "resourceVersion must not be set in spec"))
-	}
-	return append(allErrs, validateConfigMapNodeConfigSource(source, fldPath)...)
-}
-
-// validation specififc to Node.Status.Config
-func validateNodeConfigStatus(status *core.NodeConfigStatus, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	if status.Assigned != nil {
-		allErrs = append(allErrs, validateNodeConfigSourceStatus(status.Assigned, fldPath.Child("assigned"))...)
-	}
-	if status.Active != nil {
-		allErrs = append(allErrs, validateNodeConfigSourceStatus(status.Active, fldPath.Child("active"))...)
-	}
-	if status.LastKnownGood != nil {
-		allErrs = append(allErrs, validateNodeConfigSourceStatus(status.LastKnownGood, fldPath.Child("lastKnownGood"))...)
-	}
-	return allErrs
-}
-
-// validation specific to Node.Status.Config.(Active|Assigned|LastKnownGood)
-func validateNodeConfigSourceStatus(source *core.NodeConfigSource, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	count := int(0)
-	if source.ConfigMap != nil {
-		count++
-		allErrs = append(allErrs, validateConfigMapNodeConfigSourceStatus(source.ConfigMap, fldPath.Child("configMap"))...)
-	}
-	// add more subfields here in the future as they are added to NodeConfigSource
-
-	// exactly one reference subfield must be non-nil
-	if count != 1 {
-		allErrs = append(allErrs, field.Invalid(fldPath, source, "exactly one reference subfield must be non-nil"))
-	}
-	return allErrs
-}
-
-// validation specific to Node.Status.Config.(Active|Assigned|LastKnownGood).ConfigMap
-func validateConfigMapNodeConfigSourceStatus(source *core.ConfigMapNodeConfigSource, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	// uid and resourceVersion must be set in status
-	if string(source.UID) == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("uid"), "uid must be set in status"))
-	}
-	if source.ResourceVersion == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("resourceVersion"), "resourceVersion must be set in status"))
-	}
-	return append(allErrs, validateConfigMapNodeConfigSource(source, fldPath)...)
-}
-
-// common validation
-func validateConfigMapNodeConfigSource(source *core.ConfigMapNodeConfigSource, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	// validate target configmap namespace
-	if source.Namespace == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("namespace"), "namespace must be set"))
-	} else {
-		for _, msg := range ValidateNameFunc(ValidateNamespaceName)(source.Namespace, false) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("namespace"), source.Namespace, msg))
-		}
-	}
-	// validate target configmap name
-	if source.Name == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("name"), "name must be set"))
-	} else {
-		for _, msg := range ValidateNameFunc(ValidateConfigMapName)(source.Name, false) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("name"), source.Name, msg))
-		}
-	}
-	// validate kubeletConfigKey against rules for configMap key names
-	if source.KubeletConfigKey == "" {
-		allErrs = append(allErrs, field.Required(fldPath.Child("kubeletConfigKey"), "kubeletConfigKey must be set"))
-	} else {
-		for _, msg := range validation.IsConfigMapKey(source.KubeletConfigKey) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("kubeletConfigKey"), source.KubeletConfigKey, msg))
-		}
-	}
 	return allErrs
 }
 
