@@ -2205,6 +2205,9 @@ type ResourceClaim struct {
 	Name string
 }
 
+// InitContainer represents a single container that is expected to be run on the host.
+type InitContainer = Container
+
 // Container represents a single container that is expected to be run on the host.
 type Container struct {
 	// Required: This must be a DNS_LABEL.  Each container in a pod must
@@ -2871,7 +2874,7 @@ type PodReadinessGate struct {
 type PodSpec struct {
 	Volumes []Volume
 	// List of initialization containers belonging to the pod.
-	InitContainers []Container
+	InitContainers []InitContainer
 	// List of containers belonging to the pod.
 	Containers []Container
 	// List of ephemeral containers run in this pod. Ephemeral containers may be run in an existing
