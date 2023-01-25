@@ -279,7 +279,7 @@ func getCompletionIndex(annotations map[string]string) int {
 	}
 	return i
 }
-
+//TODO (SergeyKanzhelev): add support for InitContainers as a separate type
 func addCompletionIndexEnvVariables(template *v1.PodTemplateSpec) {
 	for i := range template.Spec.InitContainers {
 		addCompletionIndexEnvVariable(&template.Spec.InitContainers[i])

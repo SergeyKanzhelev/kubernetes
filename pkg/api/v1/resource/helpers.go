@@ -194,6 +194,7 @@ func ExtractResourceValueByContainerNameAndNodeAllocatable(fs *v1.ResourceFieldS
 	return ExtractContainerResourceValue(fs, container)
 }
 
+// TODO(SergeyKanzhelev): change to not require a container type
 // ExtractContainerResourceValue extracts the value of a resource
 // in an already known container
 func ExtractContainerResourceValue(fs *v1.ResourceFieldSelector, container *v1.Container) (string, error) {
@@ -263,6 +264,8 @@ func convertResourceEphemeralStorageToString(ephemeralStorage *resource.Quantity
 	return strconv.FormatInt(m, 10), nil
 }
 
+
+// TODO(SergeyKanzhelev): Rewrite with InitContainers type change in mind
 // findContainerInPod finds a container by its name in the provided pod
 func findContainerInPod(pod *v1.Pod, containerName string) (*v1.Container, error) {
 	for _, container := range pod.Spec.Containers {

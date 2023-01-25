@@ -705,6 +705,7 @@ type resourceAllocator struct {
 func (m *resourceAllocator) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAdmitResult {
 	pod := attrs.Pod
 
+	//TODO(SergeyKanzhelev): this needs re-work for InitContainers type separation
 	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
 		err := m.deviceManager.Allocate(pod, &container)
 		if err != nil {

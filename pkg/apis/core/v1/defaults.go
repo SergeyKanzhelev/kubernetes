@@ -91,6 +91,8 @@ func SetDefaults_EphemeralContainer(obj *v1.EphemeralContainer) {
 	SetDefaults_Container((*v1.Container)(&obj.EphemeralContainerCommon))
 }
 
+//TODO(SergeyKanzhelev): add SetDefaults_InitContainer
+
 func SetDefaults_Service(obj *v1.Service) {
 	if obj.Spec.SessionAffinity == "" {
 		obj.Spec.SessionAffinity = v1.ServiceAffinityNone
