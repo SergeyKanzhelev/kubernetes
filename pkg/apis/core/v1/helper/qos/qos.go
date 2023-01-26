@@ -41,9 +41,9 @@ func GetPodQOS(pod *v1.Pod) v1.PodQOSClass {
 	limits := v1.ResourceList{}
 	zeroQuantity := resource.MustParse("0")
 	isGuaranteed := true
-	podutil.VisitContainers(&pod.Spec, podutil.Containers | podutil.InitContainers, func(container *v1.Container, containerType podutil.ContainerType) bool {
+	podutil.VisitContainerResources(&pod.Spec, podutil.Containers | podutil.InitContainers, func(name string, resources *v1.ResourceRequirements, containerType podutil.ContainerType) bool {
 		// process requests
-		for name, quantity := range container.Resources.Requests {
+		for name, quantity := range resources.Requests {
 			if !isSupportedQoSComputeResource(name) {
 				continue
 			}
@@ -59,7 +59,7 @@ func GetPodQOS(pod *v1.Pod) v1.PodQOSClass {
 		}
 		// process limits
 		qosLimitsFound := sets.NewString()
-		for name, quantity := range container.Resources.Limits {
+		for name, quantity := range resources.Limits {
 			if !isSupportedQoSComputeResource(name) {
 				continue
 			}
