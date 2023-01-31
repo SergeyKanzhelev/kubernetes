@@ -299,15 +299,6 @@ func TestValidateKubeletConfiguration(t *testing.T) {
 			errMsg: "invalid configuration: registryPullQPS (--registry-qps) -1 must not be a negative number",
 		},
 		{
-			name: "specify ServerTLSBootstrap without enabling RotateKubeletServerCertificate",
-			configure: func(conf *kubeletconfig.KubeletConfiguration) *kubeletconfig.KubeletConfiguration {
-				conf.FeatureGates = map[string]bool{"RotateKubeletServerCertificate": false}
-				conf.ServerTLSBootstrap = true
-				return conf
-			},
-			errMsg: "invalid configuration: serverTLSBootstrap true requires feature gate RotateKubeletServerCertificate",
-		},
-		{
 			name: "use SingleNumaNodeTopologyManagerPolicy without enabling TopologyManager",
 			configure: func(conf *kubeletconfig.KubeletConfiguration) *kubeletconfig.KubeletConfiguration {
 				conf.FeatureGates = map[string]bool{"TopologyManager": false}

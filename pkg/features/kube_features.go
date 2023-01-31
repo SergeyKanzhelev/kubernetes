@@ -680,6 +680,7 @@ const (
 	// owner: @mikedanese
 	// alpha: v1.7
 	// beta: v1.12
+	// GA: v1.27
 	//
 	// Gets a server certificate for the kubelet from the Certificate Signing
 	// Request API instead of generating one self signed and auto rotates the
@@ -1023,7 +1024,7 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 
 	RetroactiveDefaultStorageClass: {Default: true, PreRelease: featuregate.Beta},
 
-	RotateKubeletServerCertificate: {Default: true, PreRelease: featuregate.Beta},
+	RotateKubeletServerCertificate: {Default: true, PreRelease: featuregate.Beta, LockToDefault: true}, // remove in 1.29
 
 	SeccompDefault: {Default: true, PreRelease: featuregate.Beta},
 
