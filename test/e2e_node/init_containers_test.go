@@ -563,7 +563,8 @@ func preparePod(pod *v1.Pod) {
 		},
 	}
 
-	for _, c := range pod.Spec.Containers {
+	for i := range pod.Spec.Containers {
+		c := &pod.Spec.Containers[i]
 		c.Resources = defaultResourceRequirements
 		c.VolumeMounts = []v1.VolumeMount{
 			{
@@ -572,7 +573,8 @@ func preparePod(pod *v1.Pod) {
 			},
 		}
 	}
-	for _, c := range pod.Spec.InitContainers {
+	for i := range pod.Spec.InitContainers {
+		c := &pod.Spec.InitContainers[i]
 		c.Resources = defaultResourceRequirements
 		c.VolumeMounts = []v1.VolumeMount{
 			{
