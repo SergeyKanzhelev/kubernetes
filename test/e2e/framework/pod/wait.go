@@ -740,6 +740,18 @@ func WaitForPodContainerStarted(ctx context.Context, c clientset.Interface, name
 	})
 }
 
+// WaitForPodContainerRestartCount waits for the given Pod container to achieve at least a given restartCount
+func WaitForPodContainerRestartCount(ctx context.Context, c clientset.Interface, namespace, podName string, containerIndex int, desiredRestartCount int32, timeout time.Duration) error {
+	conditionDesc := fmt.Sprintf("container %d started", containerIndex)
+	return WaitForPodCondition(ctx, c, namespace, podName, conditionDesc, timeout, func(pod *v1.Pod) (bool, error) {
+		if containerIndex > len(pod.Status.ContainerStatuses)-1 {
+			return false, nil
+		}
+		containerStatus := pod.Status.ContainerStatuses[containerIndex]
+		return containerStatus.RestartCount >= desiredRestartCount, nil
+	})
+}
+
 // WaitForPodFailedReason wait for pod failed reason in status, for example "SysctlForbidden".
 func WaitForPodFailedReason(ctx context.Context, c clientset.Interface, pod *v1.Pod, reason string, timeout time.Duration) error {
 	conditionDesc := fmt.Sprintf("failed with reason %s", reason)
