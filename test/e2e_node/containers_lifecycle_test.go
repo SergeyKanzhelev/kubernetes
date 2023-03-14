@@ -36,6 +36,7 @@ import (
 
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	imageutils "k8s.io/kubernetes/test/utils/image"
 )
 
 type execCommand struct {
@@ -704,7 +705,7 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 			client := e2epod.NewPodClient(f)
 			podSpec = client.Create(context.TODO(), podSpec)
 
-			err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, 5*time.Minute)
+			err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, f.Timeouts.PodStart)
 			framework.ExpectNoError(err)
 
 			podSpec, err = client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
@@ -794,7 +795,7 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 				client := e2epod.NewPodClient(f)
 				podSpec = client.Create(context.TODO(), podSpec)
 
-				err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, 5*time.Minute)
+				err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, f.Timeouts.PodStart)
 				framework.ExpectNoError(err)
 
 				podSpec, err = client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
@@ -815,9 +816,59 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 		})
 
 		ginkgo.When("a sidecar fails to start because of a bad image", ginkgo.Ordered, func() {
-			ginkgo.It("should mark a Pod as failed and produce log", func() {})
-			ginkgo.It("should not restart a sidecar", func() {})
-			ginkgo.It("should not start a regular container", func() {})
+			sidecar1 := "sidecar-1"
+			regular1 := "regular-1"
+
+			podSpec := &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "sidecar-runs-with-pod",
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: v1.RestartPolicyNever,
+					InitContainers: []v1.Container{
+						{
+							Name:  sidecar1,
+							Image: imageutils.GetE2EImage(imageutils.InvalidRegistryImage),
+							Command: ExecCommand(sidecar1, execCommand{
+								Delay:    600,
+								ExitCode: 0,
+							}),
+							RestartPolicy: &containerRestartPolicyAlways,
+						},
+					},
+					Containers: []v1.Container{
+						{
+							Name:  regular1,
+							Image: busyboxImage,
+							Command: ExecCommand(regular1, execCommand{
+								Delay:    1,
+								ExitCode: 0,
+							}),
+						},
+					},
+				},
+			}
+
+			preparePod(podSpec)
+			var results containerOutputList
+			ginkgo.It("should mark a Pod as failed and produce log", func() {
+				client := e2epod.NewPodClient(f)
+				podSpec = client.Create(context.TODO(), podSpec)
+
+				// sidecar should be in image pull backoff
+				err := e2epod.WaitForPodInitContainerToFail(context.TODO(), f.ClientSet, podSpec.Namespace, podSpec.Name, 0, "ImagePullBackOff", f.Timeouts.PodStart)
+				framework.ExpectNoError(err)
+
+				podSpec, err = client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
+				framework.ExpectNoError(err)
+				results = parseOutput(podSpec)
+			})
+			ginkgo.It("should not restart a sidecar", func() {
+				framework.ExpectNoError(results.DoesntStart(sidecar1))
+			})
+			ginkgo.It("should not start a regular container", func() {
+				framework.ExpectNoError(results.DoesntStart(regular1))
+			})
 		})
 
 		// TODO: add a test case similar to one above, but with startup probe never succeeding

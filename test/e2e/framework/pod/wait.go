@@ -728,6 +728,29 @@ func WaitForPodContainerToFail(ctx context.Context, c clientset.Interface, names
 	})
 }
 
+// WaitForPodInitContainerToFail waits for the given Pod init container to fail with the given reason, specifically due to
+// invalid container configuration. In this case, the container will remain in a waiting state with a specific
+// reason set, which should match the given reason.
+func WaitForPodInitContainerToFail(ctx context.Context, c clientset.Interface, namespace, podName string, containerIndex int, reason string, timeout time.Duration) error {
+	conditionDesc := fmt.Sprintf("container %d failed with reason %s", containerIndex, reason)
+	return WaitForPodCondition(ctx, c, namespace, podName, conditionDesc, timeout, func(pod *v1.Pod) (bool, error) {
+		switch pod.Status.Phase {
+		case v1.PodPending:
+			if len(pod.Status.InitContainerStatuses) == 0 {
+				return false, nil
+			}
+			containerStatus := pod.Status.InitContainerStatuses[containerIndex]
+			if containerStatus.State.Waiting != nil && containerStatus.State.Waiting.Reason == reason {
+				return true, nil
+			}
+			return false, nil
+		case v1.PodFailed, v1.PodRunning, v1.PodSucceeded:
+			return false, fmt.Errorf("pod was expected to be pending, but it is in the state: %s", pod.Status.Phase)
+		}
+		return false, nil
+	})
+}
+
 // WaitForPodContainerStarted waits for the given Pod container to start, after a successful run of the startupProbe.
 func WaitForPodContainerStarted(ctx context.Context, c clientset.Interface, namespace, podName string, containerIndex int, timeout time.Duration) error {
 	conditionDesc := fmt.Sprintf("container %d started", containerIndex)
