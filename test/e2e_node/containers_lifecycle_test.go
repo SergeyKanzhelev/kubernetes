@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -494,6 +495,20 @@ func (o containerOutputList) Starts(name string) error {
 	return nil
 }
 
+// NumberOfStarts returns the number of times the given container was found to have started
+func (o containerOutputList) NumberOfStarts(name string) int {
+	count := 0
+	idx := 0
+	for {
+		if idx = o.findIndex(name, "Starting", idx); idx == -1 {
+			break
+		}
+		count++
+		idx++
+	}
+	return count
+}
+
 // DoesntStart returns an error if the container was found to have started
 func (o containerOutputList) DoesntStart(name string) error {
 	if idx := o.findIndex(name, "Starting", 0); idx != -1 {
@@ -689,12 +704,12 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 			client := e2epod.NewPodClient(f)
 			podSpec = client.Create(context.TODO(), podSpec)
 
-			// TODO: check for Pod to be succeeded
 			err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, 5*time.Minute)
 			framework.ExpectNoError(err)
 
-			podSpec, err := client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
+			podSpec, err = client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
 			framework.ExpectNoError(err)
+			gomega.Expect(podSpec.Status.Phase).To(gomega.Equal(v1.PodSucceeded))
 			results = parseOutput(podSpec)
 		})
 
@@ -739,9 +754,64 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 
 	ginkgo.When("using a sidecar in a Pod with restartPolicy=Never", func() {
 		ginkgo.When("a sidecar runs continuously", ginkgo.Ordered, func() {
-			ginkgo.It("should complete a Pod successfully and produce log", func() {})
-			ginkgo.It("should not restart a sidecar", func() {})
-			ginkgo.It("should run a regular container to completion", func() {})
+			sidecar1 := "sidecar-1"
+			regular1 := "regular-1"
+
+			podSpec := &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "sidecar-runs-with-pod",
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: v1.RestartPolicyNever,
+					InitContainers: []v1.Container{
+						{
+							Name:  sidecar1,
+							Image: busyboxImage,
+							Command: ExecCommand(sidecar1, execCommand{
+								Delay:    600,
+								ExitCode: 0,
+							}),
+							RestartPolicy: &containerRestartPolicyAlways,
+						},
+					},
+					Containers: []v1.Container{
+						{
+							Name:  regular1,
+							Image: busyboxImage,
+							Command: ExecCommand(regular1, execCommand{
+								Delay:    1,
+								ExitCode: 0,
+							}),
+						},
+					},
+				},
+			}
+
+			preparePod(podSpec)
+			var results containerOutputList
+
+			ginkgo.It("should complete a Pod successfully and produce log", func() {
+				client := e2epod.NewPodClient(f)
+				podSpec = client.Create(context.TODO(), podSpec)
+
+				err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, podSpec.Name, podSpec.Namespace, 5*time.Minute)
+				framework.ExpectNoError(err)
+
+				podSpec, err = client.Get(context.Background(), podSpec.Name, metav1.GetOptions{})
+				framework.ExpectNoError(err)
+				gomega.Expect(podSpec.Status.Phase).To(gomega.Equal(v1.PodSucceeded))
+				results = parseOutput(podSpec)
+			})
+			ginkgo.It("should not restart a sidecar", func() {
+				gomega.Expect(results.NumberOfStarts(sidecar1)).To(gomega.BeNumerically("==", 1))
+				gomega.Expect(podSpec.Status.InitContainerStatuses).To(gomega.HaveLen(1))
+				gomega.Expect(podSpec.Status.InitContainerStatuses[0].RestartCount).To(gomega.BeNumerically("==", 0))
+			})
+			ginkgo.It("should run a regular container to completion", func() {
+				gomega.Expect(podSpec.Status.ContainerStatuses).To(gomega.HaveLen(1))
+				gomega.Expect(podSpec.Status.ContainerStatuses[0].State.Terminated).ToNot(gomega.BeNil())
+				gomega.Expect(podSpec.Status.ContainerStatuses[0].State.Terminated.Reason).To(gomega.Equal("Completed"))
+			})
 		})
 
 		ginkgo.When("a sidecar fails to start because of a bad image", ginkgo.Ordered, func() {
