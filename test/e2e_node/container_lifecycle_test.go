@@ -1055,7 +1055,7 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 					Name: "sidecar-container-run-continuously",
 				},
 				Spec: v1.PodSpec{
-					RestartPolicy: v1.RestartPolicyNever,
+					RestartPolicy: v1.RestartPolicyOnFailure,
 					InitContainers: []v1.Container{
 						{
 							Name:  sidecar1,
@@ -1112,7 +1112,7 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 					Name: "sidecar-runs-with-pod",
 				},
 				Spec: v1.PodSpec{
-					RestartPolicy: v1.RestartPolicyNever,
+					RestartPolicy: v1.RestartPolicyOnFailure,
 					InitContainers: []v1.Container{
 						{
 							Name:  sidecar1,
