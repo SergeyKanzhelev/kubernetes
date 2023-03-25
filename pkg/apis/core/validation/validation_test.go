@@ -8366,18 +8366,7 @@ func TestValidateInitContainers(t *testing.T) {
 		}},
 		field.ErrorList{{Type: field.ErrorTypeForbidden, Field: "initContainers[0].startupProbe", BadValue: ""}},
 	}, {
-		"Cannot use RestartPolicy: Always, without AllowSidecarContainers",
-		line(),
-		[]core.Container{{
-			Name:                     "init",
-			Image:                    "image",
-			ImagePullPolicy:          "IfNotPresent",
-			TerminationMessagePolicy: "File",
-			RestartPolicy:            &containerRestartPolicyAlways,
-		}},
-		field.ErrorList{{Type: field.ErrorTypeForbidden, Field: "initContainers[0].restartPolicy", BadValue: ""}},
-	}, {
-		"Not supported RestartPolicy: OnFailure, even if AllowSidecarContainers",
+		"Not supported RestartPolicy: OnFailure",
 		line(),
 		[]core.Container{{
 			Name:                     "init",
@@ -8388,7 +8377,7 @@ func TestValidateInitContainers(t *testing.T) {
 		}},
 		field.ErrorList{{Type: field.ErrorTypeNotSupported, Field: "initContainers[0].restartPolicy", BadValue: containerRestartPolicyOnFailure}},
 	}, {
-		"Not supported RestartPolicy: Never, even if AllowSidecarContainers",
+		"Not supported RestartPolicy: Never",
 		line(),
 		[]core.Container{{
 			Name:                     "init",
@@ -8399,7 +8388,7 @@ func TestValidateInitContainers(t *testing.T) {
 		}},
 		field.ErrorList{{Type: field.ErrorTypeNotSupported, Field: "initContainers[0].restartPolicy", BadValue: containerRestartPolicyNever}},
 	}, {
-		"Not supported RestartPolicy: invalid, even if AllowSidecarContainers",
+		"Not supported RestartPolicy: invalid",
 		line(),
 		[]core.Container{{
 			Name:                     "init",
@@ -8410,7 +8399,7 @@ func TestValidateInitContainers(t *testing.T) {
 		}},
 		field.ErrorList{{Type: field.ErrorTypeNotSupported, Field: "initContainers[0].restartPolicy", BadValue: containerRestartPolicyInvalid}},
 	}, {
-		"Not supported RestartPolicy: empty, even if AllowSidecarContainers",
+		"Not supported RestartPolicy: empty",
 		line(),
 		[]core.Container{{
 			Name:                     "init",
