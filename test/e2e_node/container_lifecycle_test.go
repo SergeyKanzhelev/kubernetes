@@ -1872,4 +1872,150 @@ var _ = SIGDescribe("[NodeAlphaFeature:SidecarContainers] Containers Lifecycle "
 			// TODO: check preStop hooks when they are enabled
 		})
 	})
+
+	ginkgo.It("should launch sidecar containers serially considering the startup probe", func() {
+
+		sidecar1 := "sidecar-1"
+		sidecar2 := "sidecar-2"
+		regular1 := "regular-1"
+
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sidecar-containers-start-serially",
+			},
+			Spec: v1.PodSpec{
+				RestartPolicy: v1.RestartPolicyNever,
+				InitContainers: []v1.Container{
+					{
+						Name:  sidecar1,
+						Image: busyboxImage,
+						Command: ExecCommand(sidecar1, execCommand{
+							StartDelay: 10,
+							Delay:      600,
+							ExitCode:   0,
+						}),
+						StartupProbe: &v1.Probe{
+							ProbeHandler: v1.ProbeHandler{
+								Exec: &v1.ExecAction{
+									Command: []string{"test", "-f", "started"},
+								},
+							},
+						},
+						RestartPolicy: &containerRestartPolicyAlways,
+					},
+					{
+						Name:  sidecar2,
+						Image: busyboxImage,
+						Command: ExecCommand(sidecar2, execCommand{
+							StartDelay: 10,
+							Delay:      600,
+							ExitCode:   0,
+						}),
+						StartupProbe: &v1.Probe{
+							ProbeHandler: v1.ProbeHandler{
+								Exec: &v1.ExecAction{
+									Command: []string{"test", "-f", "started"},
+								},
+							},
+						},
+						RestartPolicy: &containerRestartPolicyAlways,
+					},
+				},
+				Containers: []v1.Container{
+					{
+						Name:  regular1,
+						Image: busyboxImage,
+						Command: ExecCommand(regular1, execCommand{
+							Delay:    1,
+							ExitCode: 0,
+						}),
+					},
+				},
+			},
+		}
+
+		preparePod(pod)
+
+		client := e2epod.NewPodClient(f)
+		pod = client.Create(context.TODO(), pod)
+
+		ginkgo.By("Waiting for the pod to finish")
+		err := e2epod.WaitTimeoutForPodNoLongerRunningInNamespace(context.TODO(), f.ClientSet, pod.Name, pod.Namespace, 5*time.Minute)
+		framework.ExpectNoError(err)
+
+		pod, err = client.Get(context.TODO(), pod.Name, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+		results := parseOutput(pod)
+
+		ginkgo.By("Analyzing results")
+		framework.ExpectNoError(results.StartsBefore(sidecar1, sidecar2))
+		framework.ExpectNoError(results.StartsBefore(sidecar2, regular1))
+	})
+
+	ginkgo.It("should not launch next container if the sidecar container failed to complete startup probe", func() {
+
+		sidecar1 := "sidecar-1"
+		regular1 := "regular-1"
+
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "sidecar-container-failed-startup",
+			},
+			Spec: v1.PodSpec{
+				RestartPolicy: v1.RestartPolicyAlways,
+				InitContainers: []v1.Container{
+					{
+						Name:  sidecar1,
+						Image: busyboxImage,
+						Command: ExecCommand(sidecar1, execCommand{
+							StartDelay: 30,
+							Delay:      600,
+							ExitCode:   0,
+						}),
+						StartupProbe: &v1.Probe{
+							PeriodSeconds:    1,
+							FailureThreshold: 1,
+							ProbeHandler: v1.ProbeHandler{
+								Exec: &v1.ExecAction{
+									Command: []string{"test", "-f", "started"},
+								},
+							},
+						},
+						RestartPolicy: &containerRestartPolicyAlways,
+					},
+				},
+				Containers: []v1.Container{
+					{
+						Name:  regular1,
+						Image: busyboxImage,
+						Command: ExecCommand(regular1, execCommand{
+							Delay:    1,
+							ExitCode: 0,
+						}),
+					},
+				},
+			},
+		}
+
+		preparePod(pod)
+
+		client := e2epod.NewPodClient(f)
+		pod = client.Create(context.TODO(), pod)
+
+		ginkgo.By("Waiting for the sidecar container to restart")
+		err := WaitForPodInitContainerRestartCount(context.TODO(), f.ClientSet, pod.Namespace, pod.Name, 0, 2, 2*time.Minute)
+		framework.ExpectNoError(err)
+
+		pod, err = client.Get(context.TODO(), pod.Name, metav1.GetOptions{})
+		framework.ExpectNoError(err)
+
+		if pod.Status.Phase != v1.PodPending {
+			framework.Failf("pod %q is not pending, it's %q", pod.Name, pod.Status.Phase)
+		}
+
+		results := parseOutput(pod)
+
+		ginkgo.By("Analyzing results")
+		framework.ExpectNoError(results.DoesntStart(regular1))
+	})
 })
