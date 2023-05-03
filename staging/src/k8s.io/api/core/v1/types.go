@@ -2449,13 +2449,16 @@ type Container struct {
 	// Restart policy for the container.
 	// This may only be set for init containers.
 	// The only supported value is "Always".
-	// Setting ContainerRestartPolicyAlways on an init container changes how its
-	// lifecycle is managed. Kubernetes will still start this container in order
-	// with the other init containers, but instead of waiting for the container's
-	// completion, it will wait for the container's startup completion. If this
-	// container exits for any reason, it will be restarted, until all of the
-	// regular containers terminate, at which point this container will be
-	// terminated. This is often referred to as a "sidecar" container.
+	// When set to "Always", this init container will continuously restart if it
+	// exits for any reason, until all the regular containers have terminated.
+	// This init container will be terminated only after all the regular
+	// containers have terminated. This lifecycle differs from normal init
+	// containers and is often referred to as a "sidecar" container. Although
+	// this init container still starts in the init container sequence, it does
+	// not wait for the container to complete before proceeding to the next init
+	// container. Instead, the next init container starts immediately after this
+	// init container has begun, and its startupProbe and postStart hook, if
+	// present, have successfully completed.
 	// +featureGate=SidecarContainers
 	// +optional
 	RestartPolicy *ContainerRestartPolicy `json:"restartPolicy,omitempty" protobuf:"bytes,24,opt,name=restartPolicy"`
