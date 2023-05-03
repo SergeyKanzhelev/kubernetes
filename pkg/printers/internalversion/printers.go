@@ -862,6 +862,9 @@ func printPod(pod *api.Pod, options printers.GenerateOptions) ([]metav1.TableRow
 		switch {
 		case container.State.Terminated != nil && container.State.Terminated.ExitCode == 0:
 			continue
+		case isSidecarContainer(initContainers[container.Name]) &&
+			container.Started != nil && *container.Started:
+			continue
 		case container.State.Terminated != nil:
 			// initialization is failed
 			if len(container.State.Terminated.Reason) == 0 {
@@ -877,8 +880,6 @@ func printPod(pod *api.Pod, options printers.GenerateOptions) ([]metav1.TableRow
 		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 && container.State.Waiting.Reason != "PodInitializing":
 			reason = "Init:" + container.State.Waiting.Reason
 			initializing = true
-		case isSidecarContainer(initContainers[container.Name]) &&
-			container.Started != nil && *container.Started:
 		default:
 			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
 			initializing = true

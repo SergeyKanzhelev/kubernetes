@@ -1547,23 +1547,30 @@ func TestPrintPodWithSidecar(t *testing.T) {
 		expect []metav1.TableRow
 	}{
 		{
-			// Test pod has 1 sidecar container running but not started and 1 container not running
+			// Test pod has 2 sidecar containers, the first one running but not started.
 			api.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "test1"},
 				Spec: api.PodSpec{
 					InitContainers: []api.Container{
-						{Name: "sidecar", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-1", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-2", RestartPolicy: &containerRestartPolicyAlways},
 					}, Containers: make([]api.Container, 1)},
 				Status: api.PodStatus{
 					Phase: "Pending",
 					InitContainerStatuses: []api.ContainerStatus{
 						{
-							Name:                 "sidecar",
+							Name:                 "sidecar-1",
 							Ready:                false,
 							RestartCount:         3,
 							State:                api.ContainerState{Running: &api.ContainerStateRunning{}},
 							Started:              func() *bool { started := false; return &started }(),
 							LastTerminationState: api.ContainerState{Terminated: &api.ContainerStateTerminated{FinishedAt: metav1.NewTime(time.Now().Add(-10 * time.Second))}},
+						},
+						{
+							Name:    "sidecar-2",
+							Ready:   false,
+							State:   api.ContainerState{Waiting: &api.ContainerStateWaiting{}},
+							Started: func() *bool { started := false; return &started }(),
 						},
 					},
 					ContainerStatuses: []api.ContainerStatus{
@@ -1575,26 +1582,71 @@ func TestPrintPodWithSidecar(t *testing.T) {
 					},
 				},
 			},
-			[]metav1.TableRow{{Cells: []interface{}{"test1", "0/1", "Init:0/1", "3 (10s ago)", "<unknown>"}}},
+			[]metav1.TableRow{{Cells: []interface{}{"test1", "0/1", "Init:0/2", "3 (10s ago)", "<unknown>"}}},
 		},
 		{
-			// Test pod has 1 sidecar container started and 1 container running
+			// Test pod has 2 sidecar containers, the first one started and the second one running but not started.
 			api.Pod{
-				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
+				ObjectMeta: metav1.ObjectMeta{Name: "test1"},
 				Spec: api.PodSpec{
 					InitContainers: []api.Container{
-						{Name: "sidecar", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-1", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-2", RestartPolicy: &containerRestartPolicyAlways},
 					}, Containers: make([]api.Container, 1)},
 				Status: api.PodStatus{
-					Phase: "Running",
+					Phase: "Pending",
 					InitContainerStatuses: []api.ContainerStatus{
 						{
-							Name:                 "sidecar",
+							Name:                 "sidecar-1",
 							Ready:                false,
 							RestartCount:         3,
 							State:                api.ContainerState{Running: &api.ContainerStateRunning{}},
 							Started:              func() *bool { started := true; return &started }(),
 							LastTerminationState: api.ContainerState{Terminated: &api.ContainerStateTerminated{FinishedAt: metav1.NewTime(time.Now().Add(-10 * time.Second))}},
+						},
+						{
+							Name:    "sidecar-2",
+							Ready:   false,
+							State:   api.ContainerState{Running: &api.ContainerStateRunning{}},
+							Started: func() *bool { started := false; return &started }(),
+						},
+					},
+					ContainerStatuses: []api.ContainerStatus{
+						{
+							Ready:        false,
+							RestartCount: 0,
+							State:        api.ContainerState{Waiting: &api.ContainerStateWaiting{}},
+						},
+					},
+				},
+			},
+			[]metav1.TableRow{{Cells: []interface{}{"test1", "0/1", "Init:1/2", "3 (10s ago)", "<unknown>"}}},
+		},
+		{
+			// Test pod has 2 sidecar containers started and 1 container running
+			api.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "test2"},
+				Spec: api.PodSpec{
+					InitContainers: []api.Container{
+						{Name: "sidecar-1", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-2", RestartPolicy: &containerRestartPolicyAlways},
+					}, Containers: make([]api.Container, 1)},
+				Status: api.PodStatus{
+					Phase: "Running",
+					InitContainerStatuses: []api.ContainerStatus{
+						{
+							Name:                 "sidecar-1",
+							Ready:                false,
+							RestartCount:         3,
+							State:                api.ContainerState{Running: &api.ContainerStateRunning{}},
+							Started:              func() *bool { started := true; return &started }(),
+							LastTerminationState: api.ContainerState{Terminated: &api.ContainerStateTerminated{FinishedAt: metav1.NewTime(time.Now().Add(-10 * time.Second))}},
+						},
+						{
+							Name:    "sidecar-2",
+							Ready:   false,
+							State:   api.ContainerState{Running: &api.ContainerStateRunning{}},
+							Started: func() *bool { started := true; return &started }(),
 						},
 					},
 					ContainerStatuses: []api.ContainerStatus{
@@ -1610,22 +1662,30 @@ func TestPrintPodWithSidecar(t *testing.T) {
 			[]metav1.TableRow{{Cells: []interface{}{"test2", "1/1", "Running", "4 (10s ago)", "<unknown>"}}},
 		},
 		{
-			// Test pod has 1 sidecar container completed with non-zero and 1 container completed
+			// Test pod has 2 sidecar containers completed with non-zero and 1 container completed
 			api.Pod{
 				ObjectMeta: metav1.ObjectMeta{Name: "test3"},
 				Spec: api.PodSpec{
 					InitContainers: []api.Container{
-						{Name: "sidecar", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-1", RestartPolicy: &containerRestartPolicyAlways},
+						{Name: "sidecar-2", RestartPolicy: &containerRestartPolicyAlways},
 					}, Containers: make([]api.Container, 1)},
 				Status: api.PodStatus{
 					Phase: "Succeeded",
 					InitContainerStatuses: []api.ContainerStatus{
 						{
-							Name:                 "sidecar",
+							Name:                 "sidecar-1",
 							Ready:                false,
 							RestartCount:         3,
 							State:                api.ContainerState{Terminated: &api.ContainerStateTerminated{Reason: "Error", ExitCode: 137}},
+							Started:              func() *bool { started := false; return &started }(),
 							LastTerminationState: api.ContainerState{Terminated: &api.ContainerStateTerminated{FinishedAt: metav1.NewTime(time.Now().Add(-10 * time.Second))}},
+						},
+						{
+							Name:    "sidecar-2",
+							Ready:   false,
+							State:   api.ContainerState{Terminated: &api.ContainerStateTerminated{Reason: "Error", ExitCode: 137}},
+							Started: func() *bool { started := false; return &started }(),
 						},
 					},
 					ContainerStatuses: []api.ContainerStatus{
