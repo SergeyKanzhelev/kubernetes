@@ -847,15 +847,15 @@ func (m *kubeGenericRuntimeManager) purgeInitContainers(ctx context.Context, pod
 	}
 }
 
-// computeInitContainerActions computes the actions need to take for init
-// conainers and returns the flag indicating whether the pod has been initialized.
+// computeInitContainerActions sets the actions on the given changes that need
+// to be taken for the init containers. This includes actions to initialize the
+// init containers and actions to keep sidecar containers running.
+// computeInitContainerActions returns true if pod has been initialized.
 //
 // The actions include:
-// 1. The first init container that has not completed successfully will be
-// started.
-// 2. All sidecar containers that have started but are not running will be
-// restarted.
-// 3. Kill sidecar containers that have failed the startup probe.
+// - Start the first init container that has not been started.
+// - Restart all sidecar containers that have started but are not running.
+// - Kill the sidecar containers that have failed the startup proebe.
 func (m *kubeGenericRuntimeManager) computeInitContainerActions(pod *v1.Pod, podStatus *kubecontainer.PodStatus, changes *podActions) bool {
 	if len(pod.Spec.InitContainers) == 0 {
 		return true
