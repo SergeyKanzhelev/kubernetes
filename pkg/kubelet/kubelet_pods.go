@@ -1384,7 +1384,16 @@ func getPhase(pod *v1.Pod, info []v1.ContainerStatus, podIsTerminal bool) v1.Pod
 	spec := pod.Spec
 	pendingInitialization := 0
 	failedInitialization := 0
+
+	sidecarContainers := make([]v1.Container, 0, len(spec.InitContainers))
 	for _, container := range spec.InitContainers {
+		if kubetypes.IsSidecarContainer(&container) {
+			// Skip the sidecar containers here to handle them separately as they are
+			// slightly different from the init containers in terms of the pod phase.
+			sidecarContainers = append(sidecarContainers, container)
+			continue
+		}
+
 		containerStatus, ok := podutil.GetContainerStatus(info, container.Name)
 		if !ok {
 			pendingInitialization++
@@ -1411,16 +1420,60 @@ func getPhase(pod *v1.Pod, info []v1.ContainerStatus, podIsTerminal bool) v1.Pod
 		}
 	}
 
+	// counters for sidecar and main containers
 	unknown := 0
 	running := 0
 	waiting := 0
 	stopped := 0
 	succeeded := 0
+
+	for _, container := range sidecarContainers {
+		containerStatus, ok := podutil.GetContainerStatus(info, container.Name)
+		if !ok {
+			unknown++
+			continue
+		}
+
+		switch {
+		case containerStatus.State.Running != nil:
+			if containerStatus.Started == nil || !*containerStatus.Started {
+				pendingInitialization++
+			}
+			running++
+		case containerStatus.State.Terminated != nil:
+			// Do nothing here as terminated sidecar containers are not taken into
+			// account for the pod phase.
+		case containerStatus.State.Waiting != nil:
+			if containerStatus.LastTerminationState.Terminated != nil {
+				// Do nothing here as terminated sidecar containers are not taken into
+				// account for the pod phase.
+			} else {
+				pendingInitialization++
+				waiting++
+			}
+		default:
+			pendingInitialization++
+			unknown++
+		}
+	}
+
+	// hasInitialized is true if any regular container has started, which
+	// indicates whether the pod has been initialized.
+	// This is needed to differentiate a sidecar container pending in init phase
+	// from one pending in running phase.
+	hasInitialized := false
 	for _, container := range spec.Containers {
 		containerStatus, ok := podutil.GetContainerStatus(info, container.Name)
 		if !ok {
 			unknown++
 			continue
+		}
+
+		if containerStatus.State.Running != nil || containerStatus.State.Terminated != nil {
+			// If any regular container is running or terminated, it means the pod
+			// has been initialized which indicates all init containers have been
+			// completed and all sidecar containers have been started at least once.
+			hasInitialized = true
 		}
 
 		switch {
@@ -1447,7 +1500,7 @@ func getPhase(pod *v1.Pod, info []v1.ContainerStatus, podIsTerminal bool) v1.Pod
 	}
 
 	switch {
-	case pendingInitialization > 0:
+	case pendingInitialization > 0 && !hasInitialized:
 		fallthrough
 	case waiting > 0:
 		klog.V(5).InfoS("Pod waiting > 0, pending")
@@ -1463,7 +1516,8 @@ func getPhase(pod *v1.Pod, info []v1.ContainerStatus, podIsTerminal bool) v1.Pod
 		if podIsTerminal {
 			// TODO(#116484): Also assign terminal phase to static pods.
 			if !kubetypes.IsStaticPod(pod) {
-				// All containers are terminated in success
+				// All regular containers are terminated in success and all sidecar
+				// containers are stopped.
 				if stopped == succeeded {
 					return v1.PodSucceeded
 				}
@@ -1477,8 +1531,8 @@ func getPhase(pod *v1.Pod, info []v1.ContainerStatus, podIsTerminal bool) v1.Pod
 			return v1.PodRunning
 		}
 		if stopped == succeeded {
-			// RestartPolicy is not Always, and all
-			// containers are terminated in success
+			// RestartPolicy is not Always, all containers are terminated in success
+			// and all sidecar containers are stopped.
 			return v1.PodSucceeded
 		}
 		if spec.RestartPolicy == v1.RestartPolicyNever {
@@ -1583,7 +1637,7 @@ func (kl *Kubelet) generateAPIPodStatus(pod *v1.Pod, podStatus *kubecontainer.Po
 	}
 
 	// ensure the probe managers have up to date status for containers
-	kl.probeManager.UpdatePodStatus(pod.UID, s)
+	kl.probeManager.UpdatePodStatus(pod, s)
 
 	// preserve all conditions not owned by the kubelet
 	s.Conditions = make([]v1.PodCondition, 0, len(pod.Status.Conditions)+1)
