@@ -580,6 +580,16 @@ func TestStaticPod(t *testing.T) {
 func TestTerminatePod(t *testing.T) {
 	syncer := newTestManager(&fake.Clientset{})
 	testPod := getTestPod()
+	testPod.Spec.InitContainers = []v1.Container{
+		{Name: "init-test-1"},
+		{Name: "init-test-2"},
+		{Name: "init-test-3"},
+	}
+	testPod.Spec.Containers = []v1.Container{
+		{Name: "test-1"},
+		{Name: "test-2"},
+		{Name: "test-3"},
+	}
 	t.Logf("update the pod's status to Failed.  TerminatePod should preserve this status update.")
 	firstStatus := getRandomPodStatus()
 	firstStatus.Phase = v1.PodFailed
@@ -638,6 +648,16 @@ func TestTerminatePod(t *testing.T) {
 func TestTerminatePodWaiting(t *testing.T) {
 	syncer := newTestManager(&fake.Clientset{})
 	testPod := getTestPod()
+	testPod.Spec.InitContainers = []v1.Container{
+		{Name: "init-test-1"},
+		{Name: "init-test-2"},
+		{Name: "init-test-3"},
+	}
+	testPod.Spec.Containers = []v1.Container{
+		{Name: "test-1"},
+		{Name: "test-2"},
+		{Name: "test-3"},
+	}
 	t.Logf("update the pod's status to Failed.  TerminatePod should preserve this status update.")
 	firstStatus := getRandomPodStatus()
 	firstStatus.Phase = v1.PodFailed
@@ -804,7 +824,7 @@ func TestTerminatePod_DefaultUnknownStatus(t *testing.T) {
 			name: "uninitialized pod defaults the first init container",
 			pod: newPod(1, 1, func(pod *v1.Pod) {
 				pod.Spec.RestartPolicy = v1.RestartPolicyNever
-				pod.Status.Phase = v1.PodRunning
+				pod.Status.Phase = v1.PodPending
 				pod.Status.InitContainerStatuses = []v1.ContainerStatus{
 					{Name: "init-0", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
 				}
@@ -821,7 +841,7 @@ func TestTerminatePod_DefaultUnknownStatus(t *testing.T) {
 			name: "uninitialized pod defaults only the first init container",
 			pod: newPod(2, 1, func(pod *v1.Pod) {
 				pod.Spec.RestartPolicy = v1.RestartPolicyNever
-				pod.Status.Phase = v1.PodRunning
+				pod.Status.Phase = v1.PodPending
 				pod.Status.InitContainerStatuses = []v1.ContainerStatus{
 					{Name: "init-0", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
 					{Name: "init-1", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
@@ -840,7 +860,7 @@ func TestTerminatePod_DefaultUnknownStatus(t *testing.T) {
 			name: "uninitialized pod defaults gaps",
 			pod: newPod(4, 1, func(pod *v1.Pod) {
 				pod.Spec.RestartPolicy = v1.RestartPolicyNever
-				pod.Status.Phase = v1.PodRunning
+				pod.Status.Phase = v1.PodPending
 				pod.Status.InitContainerStatuses = []v1.ContainerStatus{
 					{Name: "init-0", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
 					{Name: "init-1", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
@@ -863,7 +883,7 @@ func TestTerminatePod_DefaultUnknownStatus(t *testing.T) {
 			name: "failed last container is uninitialized",
 			pod: newPod(3, 1, func(pod *v1.Pod) {
 				pod.Spec.RestartPolicy = v1.RestartPolicyNever
-				pod.Status.Phase = v1.PodRunning
+				pod.Status.Phase = v1.PodPending
 				pod.Status.InitContainerStatuses = []v1.ContainerStatus{
 					{Name: "init-0", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
 					{Name: "init-1", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}},
