@@ -650,6 +650,85 @@ func TestStorageRequests(t *testing.T) {
 
 }
 
+func TestSidecarContainers(t *testing.T) {
+	newPodWithoutSidecarContainers := func() *v1.Pod {
+		return &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{Name: "regular"},
+				},
+			},
+		}
+	}
+	newPodWithSidecarContainers := func() *v1.Pod {
+		restartPolicyAlways := v1.ContainerRestartPolicyAlways
+		return &v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{Name: "regular"},
+				},
+				InitContainers: []v1.Container{
+					{
+						Name:          "sidecar",
+						RestartPolicy: &restartPolicyAlways,
+					},
+				},
+			},
+		}
+	}
+
+	sidecarContainersTests := []struct {
+		name                    string
+		pod                     *v1.Pod
+		enableSidecarContainers bool
+		wantStatus              *framework.Status
+	}{
+		{
+			name: "allow pod without sidecar containers if sidecar containers is disabled",
+			pod:  newPodWithoutSidecarContainers(),
+		},
+		{
+			name:       "not allow pod with sidecar containers if sidecar containers is disabled",
+			pod:        newPodWithSidecarContainers(),
+			wantStatus: framework.NewStatus(framework.UnschedulableAndUnresolvable, "SidecarContainers feature is disabled"),
+		},
+		{
+			name:                    "allow pod without sidecar containers if sidecar containers is enabled",
+			enableSidecarContainers: true,
+			pod:                     newPodWithoutSidecarContainers(),
+		},
+		{
+			name:                    "allow pod with sidecar containers if sidecar containers is enabled",
+			enableSidecarContainers: true,
+			pod:                     newPodWithSidecarContainers(),
+		},
+	}
+
+	for _, test := range sidecarContainersTests {
+		t.Run(test.name, func(t *testing.T) {
+			node := v1.Node{Status: v1.NodeStatus{Capacity: v1.ResourceList{}, Allocatable: makeAllocatableResources(0, 0, 1, 0, 0, 0)}}
+			nodeInfo := framework.NewNodeInfo()
+			nodeInfo.SetNode(&node)
+
+			p, err := NewFit(&config.NodeResourcesFitArgs{ScoringStrategy: defaultScoringStrategy}, nil, plfeature.Features{EnableSidecarContainers: test.enableSidecarContainers})
+			if err != nil {
+				t.Fatal(err)
+			}
+			cycleState := framework.NewCycleState()
+			_, preFilterStatus := p.(framework.PreFilterPlugin).PreFilter(context.Background(), cycleState, test.pod)
+			if !preFilterStatus.IsSuccess() {
+				t.Errorf("prefilter failed with status: %v", preFilterStatus)
+			}
+
+			gotStatus := p.(framework.FilterPlugin).Filter(context.Background(), cycleState, test.pod, nodeInfo)
+			if diff := cmp.Diff(gotStatus, test.wantStatus); diff != "" {
+				t.Errorf("status does not match: %v, want: %v", gotStatus, test.wantStatus)
+			}
+		})
+	}
+
+}
+
 func TestFitScore(t *testing.T) {
 	tests := []struct {
 		name                 string
