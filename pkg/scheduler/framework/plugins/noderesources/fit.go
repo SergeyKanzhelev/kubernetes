@@ -24,8 +24,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/api/v1/resource"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
+	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/pkg/scheduler/apis/config"
 	"k8s.io/kubernetes/pkg/scheduler/apis/config/validation"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
@@ -251,6 +253,12 @@ func (f *Fit) EventsToRegister() []framework.ClusterEvent {
 // Checks if a node has sufficient resources, such as cpu, memory, gpu, opaque int resources etc to run a pod.
 // It returns a list of insufficient resources, if empty, then the node has all the resources requested by the pod.
 func (f *Fit) Filter(ctx context.Context, cycleState *framework.CycleState, pod *v1.Pod, nodeInfo *framework.NodeInfo) *framework.Status {
+	// To avoid the inconsistency in resource calculation between the scheduler
+	// and the old (before v1.28) kubelet.
+	if !utilfeature.DefaultFeatureGate.Enabled(features.SidecarContainers) && hasSidecarContainer(pod) {
+		return framework.NewStatus(framework.UnschedulableAndUnresolvable, "A pod has sidecar containers")
+	}
+
 	s, err := getPreFilterState(cycleState)
 	if err != nil {
 		return framework.AsStatus(err)
@@ -267,6 +275,15 @@ func (f *Fit) Filter(ctx context.Context, cycleState *framework.CycleState, pod 
 		return framework.NewStatus(framework.Unschedulable, failureReasons...)
 	}
 	return nil
+}
+
+func hasSidecarContainer(pod *v1.Pod) bool {
+	for _, c := range pod.Spec.InitContainers {
+		if c.RestartPolicy != nil && *c.RestartPolicy == v1.ContainerRestartPolicyAlways {
+			return true
+		}
+	}
+	return false
 }
 
 // InsufficientResource describes what kind of resource limit is hit and caused the pod to not fit the node.
