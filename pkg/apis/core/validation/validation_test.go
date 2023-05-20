@@ -8415,6 +8415,23 @@ func TestValidateInitContainers(t *testing.T) {
 			RestartPolicy:            &containerRestartPolicyEmpty,
 		}},
 		field.ErrorList{{Type: field.ErrorTypeNotSupported, Field: "initContainers[0].restartPolicy", BadValue: containerRestartPolicyEmpty}},
+	}, {
+		"invalid startup probe in sidecar container, successThreshold != 1",
+		line(),
+		[]core.Container{{
+			Name:                     "sidecar",
+			Image:                    "image",
+			ImagePullPolicy:          "IfNotPresent",
+			TerminationMessagePolicy: "File",
+			RestartPolicy:            &containerRestartPolicyAlways,
+			StartupProbe: &core.Probe{
+				ProbeHandler: core.ProbeHandler{
+					TCPSocket: &core.TCPSocketAction{Port: intstr.FromInt(80)},
+				},
+				SuccessThreshold: 2,
+			},
+		}},
+		field.ErrorList{{Type: field.ErrorTypeInvalid, Field: "initContainers[0].startupProbe.successThreshold", BadValue: int32(2)}},
 	},
 	}
 	for _, tc := range errorCases {

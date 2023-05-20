@@ -3202,19 +3202,41 @@ func validateInitContainers(containers []core.Container, regularContainers []cor
 		// Check for port conflicts in init containers individually since init containers run one-by-one.
 		allErrs = append(allErrs, checkHostPortConflicts([]core.Container{ctr}, fldPath)...)
 
-		// These fields are disallowed for init containers.
-		if ctr.Lifecycle != nil {
-			allErrs = append(allErrs, field.Forbidden(idxPath.Child("lifecycle"), "may not be set for init containers"))
+		switch {
+		case isSidecar:
+			// TODO: Allow sidecar containers to have a lifecycle hook.
+			if ctr.Lifecycle != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("lifecycle"), "may not be set for init containers"))
+			}
+			// TODO: Allow sidecar containers to have a liveness probe.
+			if ctr.LivenessProbe != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("livenessProbe"), "may not be set for init containers"))
+			}
+			// TODO: Allow sidecar containers to have a readiness probe.
+			if ctr.ReadinessProbe != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("readinessProbe"), "may not be set for init containers"))
+			}
+			allErrs = append(allErrs, validateProbe(ctr.StartupProbe, idxPath.Child("startupProbe"))...)
+			if ctr.StartupProbe != nil && ctr.StartupProbe.SuccessThreshold != 1 {
+				allErrs = append(allErrs, field.Invalid(idxPath.Child("startupProbe", "successThreshold"), ctr.StartupProbe.SuccessThreshold, "must be 1"))
+			}
+
+		default:
+			// These fields are disallowed for init containers.
+			if ctr.Lifecycle != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("lifecycle"), "may not be set for init containers"))
+			}
+			if ctr.LivenessProbe != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("livenessProbe"), "may not be set for init containers"))
+			}
+			if ctr.ReadinessProbe != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("readinessProbe"), "may not be set for init containers"))
+			}
+			if ctr.StartupProbe != nil {
+				allErrs = append(allErrs, field.Forbidden(idxPath.Child("startupProbe"), "may not be set for init containers"))
+			}
 		}
-		if ctr.LivenessProbe != nil {
-			allErrs = append(allErrs, field.Forbidden(idxPath.Child("livenessProbe"), "may not be set for init containers"))
-		}
-		if ctr.ReadinessProbe != nil {
-			allErrs = append(allErrs, field.Forbidden(idxPath.Child("readinessProbe"), "may not be set for init containers"))
-		}
-		if ctr.StartupProbe != nil && !isSidecar {
-			allErrs = append(allErrs, field.Forbidden(idxPath.Child("startupProbe"), "may not be set for init containers"))
-		}
+
 		if len(ctr.ResizePolicy) > 0 {
 			allErrs = append(allErrs, field.Invalid(idxPath.Child("resizePolicy"), ctr.ResizePolicy, "must not be set for init containers"))
 		}
