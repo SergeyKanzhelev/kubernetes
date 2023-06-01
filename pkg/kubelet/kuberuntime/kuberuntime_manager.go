@@ -827,32 +827,31 @@ func (m *kubeGenericRuntimeManager) computePodActions(ctx context.Context, pod *
 	// If we need to (re-)create the pod sandbox, everything will need to be
 	// killed and recreated, and init containers should be purged.
 	if createPodSandbox {
-		if !shouldRestartOnFailure(pod) && attempt != 0 && len(podStatus.ContainerStatuses) != 0 {
-			// Should not restart the pod, just return.
-			// we should not create a sandbox for a pod if it is already done.
-			// if all containers are done and should not be started, there is no need to create a new sandbox.
-			// this stops confusing logs on pods whose containers all have exit codes, but we recreate a sandbox before terminating it.
-			//
-			// If ContainerStatuses is empty, we assume that we've never
-			// successfully created any containers. In this case, we should
-			// retry creating the sandbox.
-			changes.CreateSandbox = false
-			return changes
-		}
-
-		// Get the containers to start, excluding the ones that succeeded if RestartPolicy is OnFailure.
+		// Get the containers to start,excluding the ones that succeeded if
+		// RestartPolicy is OnFailure and the ones that exited if RestartPolicy is
+		// Never.
 		var containersToStart []int
 		for idx, c := range pod.Spec.Containers {
-			if pod.Spec.RestartPolicy == v1.RestartPolicyOnFailure && containerSucceeded(&c, podStatus) {
-				continue
+			status := podStatus.FindContainerStatusByName(c.Name)
+			switch pod.Spec.RestartPolicy {
+			case v1.RestartPolicyNever:
+				if status != nil && status.State == kubecontainer.ContainerStateExited {
+					continue
+				}
+			case v1.RestartPolicyOnFailure:
+				if status != nil && status.State == kubecontainer.ContainerStateExited && status.ExitCode == 0 {
+					continue
+				}
 			}
+			// If the container is not stopped yet, we should start it after
+			// recreating the sandbox.
 			containersToStart = append(containersToStart, idx)
 		}
 		// We should not create a sandbox for a Pod if initialization is done and
-		// there is no regular container or sidecar container to start.
+		// there is no container to start.
 		if len(containersToStart) == 0 {
 			hasInitialized := m.computeInitContainerActions(pod, podStatus, &changes)
-			if hasInitialized && len(changes.InitContainersToStart) == 0 {
+			if hasInitialized {
 				changes.CreateSandbox = false
 				return changes
 			}
