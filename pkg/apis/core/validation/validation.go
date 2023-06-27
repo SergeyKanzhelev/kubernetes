@@ -3208,9 +3208,9 @@ func validateInitContainers(containers []core.Container, regularContainers []cor
 			if ctr.Lifecycle != nil {
 				allErrs = append(allErrs, field.Forbidden(idxPath.Child("lifecycle"), "may not be set for init containers"))
 			}
-			// TODO: Allow restartable init containers to have a liveness probe.
-			if ctr.LivenessProbe != nil {
-				allErrs = append(allErrs, field.Forbidden(idxPath.Child("livenessProbe"), "may not be set for init containers"))
+			allErrs = append(allErrs, validateProbe(ctr.LivenessProbe, idxPath.Child("livenessProbe"))...)
+			if ctr.LivenessProbe != nil && ctr.LivenessProbe.SuccessThreshold != 1 {
+				allErrs = append(allErrs, field.Invalid(idxPath.Child("livenessProbe", "successThreshold"), ctr.LivenessProbe.SuccessThreshold, "must be 1"))
 			}
 			allErrs = append(allErrs, validateProbe(ctr.ReadinessProbe, idxPath.Child("readinessProbe"))...)
 			if ctr.ReadinessProbe != nil && ctr.ReadinessProbe.TerminationGracePeriodSeconds != nil {

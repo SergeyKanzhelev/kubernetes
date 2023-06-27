@@ -875,7 +875,7 @@ func hasAnyRegularContainerCreated(pod *v1.Pod, podStatus *kubecontainer.PodStat
 // The actions include:
 // - Start the first init container that has not been started.
 // - Restart all restartable init containers that have started but are not running.
-// - Kill the restartable init containers that have failed the startup probe.
+// - Kill the restartable init containers that are not lived or started.
 func (m *kubeGenericRuntimeManager) computeInitContainerActions(pod *v1.Pod, podStatus *kubecontainer.PodStatus, changes *podActions) bool {
 	if len(pod.Spec.InitContainers) == 0 {
 		return true
@@ -929,6 +929,28 @@ func (m *kubeGenericRuntimeManager) computeInitContainerActions(pod *v1.Pod, pod
 			}
 
 			if types.IsRestartableInitContainer(container) {
+				if container.LivenessProbe != nil {
+					liveness, found := m.livenessManager.Get(status.ID)
+					if !found {
+						// If the liveness probe has not been run, wait for it.
+						break
+					}
+					if liveness != proberesults.Success {
+						if liveness == proberesults.Failure {
+							// If the restartable init container failed the liveness probe,
+							// restart it.
+							changes.ContainersToKill[status.ID] = containerToKillInfo{
+								name:      container.Name,
+								container: container,
+								message:   fmt.Sprintf("Init container %s failed liveness probe", container.Name),
+								reason:    reasonLivenessProbe,
+							}
+							changes.InitContainersToStart = append(changes.InitContainersToStart, i)
+						}
+						break
+					}
+				}
+
 				if container.StartupProbe != nil {
 					startup, found := m.startupManager.Get(status.ID)
 					if !found {
