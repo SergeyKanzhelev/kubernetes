@@ -330,16 +330,16 @@ message NamespaceOption {
     UserNamespace userns_options = 5;
 }
 
-// SupplementalGroupsPolicy defines how supplemental groups 
+// SupplementalGroupsPolicy defines how supplemental groups
 // of the first container processes are calculated.
 enum SupplementalGroupsPolicy {
-    // Merge means that the container's provided SupplementalGroups 
-    // and FsGroup (specified in SecurityContext) will be merged with 
+    // Merge means that the container's provided SupplementalGroups
+    // and FsGroup (specified in SecurityContext) will be merged with
     // the primary user's groups as defined in the container image
     // (in /etc/group).
     Merge = 0;
     // Strict means that the container's provided SupplementalGroups
-    // and FsGroup (specified in SecurityContext) will be used instead of 
+    // and FsGroup (specified in SecurityContext) will be used instead of
     // any groups defined in the container image.
     Strict = 1;
 }
@@ -371,7 +371,7 @@ message LinuxSandboxSecurityContext {
     // List of groups applied to the first process run in each container.
     // supplemental_groups_policy can control how groups will be calculated.
     repeated int64 supplemental_groups = 5;
-    // supplemental_groups_policy defines how supplemental groups of the first 
+    // supplemental_groups_policy defines how supplemental groups of the first
     // container processes are calculated.
     // Valid values are "Merge" and "Strict".
     // If not specified, "Merge" is used.
@@ -932,7 +932,7 @@ message LinuxContainerSecurityContext {
     // List of groups applied to the first process run in each container.
     // supplemental_groups_policy can control how groups will be calculated.
     repeated int64 supplemental_groups = 8;
-    // supplemental_groups_policy defines how supplemental groups of the first 
+    // supplemental_groups_policy defines how supplemental groups of the first
     // container processes are calculated.
     // Valid values are "Merge" and "Strict".
     // If not specified, "Merge" is used.
@@ -1517,14 +1517,14 @@ message ImageStatusResponse {
 // AuthConfig contains authorization information for connecting to a registry.
 message AuthConfig {
     string username = 1;
-    string password = 2;
-    string auth = 3;
+    string password = 2 [debug_redact = true];
+    string auth = 3 [debug_redact = true];
     string server_address = 4;
     // IdentityToken is used to authenticate the user and get
     // an access token for the registry.
-    string identity_token = 5;
+    string identity_token = 5 [debug_redact = true];
     // RegistryToken is a bearer token to be sent to a registry
-    string registry_token = 6;
+    string registry_token = 6 [debug_redact = true];
 }
 
 message PullImageRequest {
