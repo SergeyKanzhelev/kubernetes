@@ -1032,13 +1032,32 @@ func (cm *containerManagerImpl) PodMightNeedToUnprepareResources(UID types.UID) 
 
 func (cm *containerManagerImpl) UpdateAllocatedResourcesStatus(pod *v1.Pod, status *v1.PodStatus) {
 
-	// For now we only support Device Plugin
 	cm.deviceManager.UpdateAllocatedResourcesStatus(pod, status)
 
-	// TODO(SergeyKanzhelev, https://kep.k8s.io/4680): add support for DRA resources which is planned for the next iteration of a KEP.
+	cm.draManager.UpdateAllocatedResourcesStatus(pod, status)
 }
 
 func (cm *containerManagerImpl) Updates() <-chan resourceupdates.Update {
-	// TODO(SergeyKanzhelev, https://kep.k8s.io/4680): add support for DRA resources, for now only use device plugin updates. DRA support is planned for the next iteration of a KEP.
-	return cm.deviceManager.Updates()
+
+	// Return the channel that is a combination of two channels - one from device manager and one from DRA manager
+
+	out := make(chan resourceupdates.Update)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	proxy := func(c <-chan resourceupdates.Update) {
+		for v := range c {
+			out <- v
+		}
+		wg.Done()
+	}
+
+	go proxy(cm.deviceManager.Updates())
+	go proxy(cm.draManager.Updates())
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
 }

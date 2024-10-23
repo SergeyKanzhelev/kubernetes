@@ -21,6 +21,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/kubelet/cm/resourceupdates"
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
@@ -48,6 +49,12 @@ type Manager interface {
 
 	// GetContainerClaimInfos gets Container ClaimInfo objects
 	GetContainerClaimInfos(pod *v1.Pod, container *v1.Container) ([]*ClaimInfo, error)
+
+	// UpdateAllocatedResourcesStatus updates the status of allocated resources for the pod.
+	UpdateAllocatedResourcesStatus(pod *v1.Pod, status *v1.PodStatus)
+
+	// Updates returns a channel that receives an Update when the device changed its status.
+	Updates() <-chan resourceupdates.Update
 }
 
 // ContainerInfo contains information required by the runtime to consume prepared resources.

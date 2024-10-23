@@ -560,3 +560,7 @@ func (ex *ExamplePlugin) CountCalls(methodSuffix string) int {
 	}
 	return count
 }
+
+func (ex *ExamplePlugin) WatchResources(req *drapb.WatchResourcesRequest, srv drapb.Node_WatchResourcesServer) error {
+	return nil
+}

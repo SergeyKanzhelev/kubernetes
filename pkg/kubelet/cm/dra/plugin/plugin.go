@@ -47,6 +47,8 @@ func NewDRAPluginClient(pluginName string) (*Plugin, error) {
 		return nil, fmt.Errorf("plugin name %s not found in the list of registered DRA plugins", pluginName)
 	}
 
+	//TODO(SergeyKanzhelev): connect to the plugin by doing List and Watch (if it is the first time)
+
 	return existingPlugin, nil
 }
 

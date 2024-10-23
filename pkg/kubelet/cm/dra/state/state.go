@@ -57,3 +57,27 @@ type Device struct {
 	RequestNames []string
 	CDIDeviceIDs []string
 }
+
+// DevicesHealthMap is a map of driver name to the list of devices's health
+type DevicesHealthMap map[string]DriverHealthState
+
+// DriverHealthState is used to store health information of all devices of a driver
+type DriverHealthState struct {
+	Devices []DeviceHealth
+}
+
+type DeviceHealthString string
+
+// DeviceHealth is used to store health information of a device
+type DeviceHealth struct {
+	// PoolName is the name of the pool where the device is allocated
+	PoolName string
+
+	// DeviceName is the name of the device. Together with driver name and pool name it identifies the device.
+	// (`<driver name>/<pool name>/<device name>`)
+	DeviceName string
+
+	// Health is the health status of the device.
+	// Can be "healthy", "unhealthy", "unknown".
+	Health DeviceHealthString
+}

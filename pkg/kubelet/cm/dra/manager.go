@@ -18,6 +18,7 @@ package dra
 
 import (
 	"context"
+	goerrors "errors"
 	"fmt"
 	"time"
 
@@ -27,12 +28,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/resourceclaim"
 	"k8s.io/klog/v2"
 	drapb "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
+	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
+	"k8s.io/kubernetes/pkg/features"
 	dra "k8s.io/kubernetes/pkg/kubelet/cm/dra/plugin"
 	"k8s.io/kubernetes/pkg/kubelet/cm/dra/state"
+	"k8s.io/kubernetes/pkg/kubelet/cm/resourceupdates"
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
@@ -51,6 +56,9 @@ type ManagerImpl struct {
 	// cache contains cached claim info
 	cache *claimInfoCache
 
+	// healthInfoCache contains cached devices health info
+	healthInfoCache *healthInfoCache
+
 	// reconcilePeriod is the duration between calls to reconcileLoop.
 	reconcilePeriod time.Duration
 
@@ -64,6 +72,9 @@ type ManagerImpl struct {
 
 	// KubeClient reference
 	kubeClient clientset.Interface
+
+	// updates is a channel to notify that some devices status has changed.
+	update chan resourceupdates.Update
 }
 
 // NewManagerImpl creates a new manager.
@@ -73,16 +84,23 @@ func NewManagerImpl(kubeClient clientset.Interface, stateFileDirectory string, n
 		return nil, fmt.Errorf("failed to create claimInfo cache: %w", err)
 	}
 
+	healthInfoCache, err := newHealthInfoCache()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create healthInfo cache: %w", err)
+	}
+
 	// TODO: for now the reconcile period is not configurable.
 	// We should consider making it configurable in the future.
 	reconcilePeriod := defaultReconcilePeriod
 
 	manager := &ManagerImpl{
 		cache:           claimInfoCache,
+		healthInfoCache: healthInfoCache,
 		kubeClient:      kubeClient,
 		reconcilePeriod: reconcilePeriod,
 		activePods:      nil,
 		sourcesReady:    nil,
+		update:          make(chan resourceupdates.Update, 100),
 	}
 
 	return manager, nil
@@ -524,4 +542,104 @@ func (m *ManagerImpl) GetContainerClaimInfos(pod *v1.Pod, container *v1.Containe
 		}
 	}
 	return claimInfos, nil
+}
+
+func (m *ManagerImpl) PluginListAndWatchReceiver(resourceName string, resp *drapb.WatchResourcesResponse) {
+	if utilfeature.DefaultFeatureGate.Enabled(features.ResourceHealthStatus) {
+		updated := make([]state.DeviceHealth, 0)
+		for _, d := range resp.Devices {
+			if dH, u := m.healthInfoCache.updateHealthInfo(resourceName, d.PoolName, d.DeviceName, state.DeviceHealthString(d.Health)); u {
+				updated = append(updated, dH)
+			}
+		}
+
+		podsToUpdate := sets.New[string]()
+
+		for _, dev := range updated {
+			// get all pod uids that have this device
+			for _, c := range m.cache.claimInfo {
+				for dr, s := range c.DriverState {
+					if dr == resourceName {
+						for _, d := range s.Devices {
+							if d.DeviceName == dev.DeviceName && d.PoolName == dev.PoolName {
+								podsToUpdate.Insert(c.PodUIDs.UnsortedList()...)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if len(podsToUpdate) > 0 {
+			select {
+			case m.update <- resourceupdates.Update{PodUIDs: podsToUpdate.UnsortedList()}:
+			default:
+				klog.ErrorS(goerrors.New("device update channel is full"), "discard pods info", "podsToUpdate", podsToUpdate.UnsortedList())
+			}
+		}
+	}
+}
+
+func (m *ManagerImpl) UpdateAllocatedResourcesStatus(pod *v1.Pod, status *v1.PodStatus) {
+	for _, c := range m.cache.claimInfo {
+		if c.PodUIDs.Has(string(pod.UID)) {
+			found := false
+
+			// each container this claim belongs to should update it's status
+			podutil.VisitContainers(&pod.Spec, podutil.AllContainers, func(container *v1.Container, containerType podutil.ContainerType) bool {
+				for _, claim := range container.Resources.Claims {
+					if claim.Name == c.ClaimName {
+						// one claim can be in multiple containers, so we need to continue the loop.
+						// we need to indicate that the claim is not a "Pod-level" claim
+						found = true
+
+						// assign the devices status to the container
+						for driverName, driverState := range c.DriverState {
+							for i, containerStatus := range status.ContainerStatuses {
+								// Note, we are ignoring the case when container status is not found,
+								// in assumption that kubelet has already created statuses for each container
+								if containerStatus.Name == container.Name {
+									if status.ContainerStatuses[i].AllocatedResourcesStatus == nil {
+										status.ContainerStatuses[i].AllocatedResourcesStatus = []v1.ResourceStatus{}
+									}
+									resourceStatus := v1.ResourceStatus{
+										Name:      v1.ResourceName(driverName),
+										Resources: []v1.ResourceHealth{},
+									}
+									for _, d := range driverState.Devices {
+										resourceStatus.Resources = append(resourceStatus.Resources, v1.ResourceHealth{
+											ResourceID: v1.ResourceID(d.DeviceName),
+											Health:     v1.ResourceHealthStatus(m.healthInfoCache.getHealthInfo(driverName, d.PoolName, d.DeviceName)),
+										})
+									}
+
+									foundStatus := false
+									for i, r := range status.ContainerStatuses[i].AllocatedResourcesStatus {
+										if r.Name == resourceStatus.Name {
+											// we need to update the status, not append
+											status.ContainerStatuses[i].AllocatedResourcesStatus[i] = resourceStatus
+											foundStatus = true
+										}
+									}
+
+									if !foundStatus {
+										status.ContainerStatuses[i].AllocatedResourcesStatus = append(status.ContainerStatuses[i].AllocatedResourcesStatus, resourceStatus)
+									}
+								}
+							}
+						}
+					}
+				}
+				return true
+			})
+			if !found {
+				// TODO(SergeyKanzhelev): once we have Status in Pod-level API, we will report it back
+				klog.Warningf("Claim %s not found in any container of pod %s/%s", c.ClaimName, pod.Namespace, pod.Name)
+			}
+		}
+	}
+}
+
+func (m *ManagerImpl) Updates() <-chan resourceupdates.Update {
+	return m.update
 }
