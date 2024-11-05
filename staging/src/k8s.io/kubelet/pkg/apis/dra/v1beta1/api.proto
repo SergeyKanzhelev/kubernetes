@@ -47,4 +47,9 @@ service DRAPlugin {
   // The same error handling rules apply,
   rpc NodeUnprepareResources (v1alpha3.NodeUnprepareResourcesRequest)
     returns (v1alpha3.NodeUnprepareResourcesResponse) {}
+
+  // WatchResources returns a stream of DeviceHealth
+  rpc WatchResources (v1alpha3.WatchResourcesRequest)
+    returns (stream v1alpha3.WatchResourcesResponse) {}
+
 }

@@ -43,6 +43,10 @@ service Node {
   // The same error handling rules apply,
   rpc NodeUnprepareResources (NodeUnprepareResourcesRequest)
     returns (NodeUnprepareResourcesResponse) {}
+
+  // WatchResources returns a stream of DeviceHealth
+  rpc WatchResources (WatchResourcesRequest)
+    returns (stream WatchResourcesResponse) {}
 }
 
 message NodePrepareResourcesRequest {
@@ -114,4 +118,24 @@ message Claim {
     // The name of the Resource claim (ResourceClaim.meta.Name)
     // This field is REQUIRED.
     string name = 3;
+}
+
+message WatchResourcesRequest {
+    // Empty for now, can be extended in the future.
+}
+
+message DeviceHealth {
+    // The pool which contains the device. Required.
+    string pool_name = 1;
+
+    // The device itself. Required.
+    string device_name = 2;
+
+    // The health of the device. Required.
+    // Can be healthy or unhealthy.
+    string health = 3;
+}
+
+message WatchResourcesResponse {
+    repeated DeviceHealth devices = 1;
 }

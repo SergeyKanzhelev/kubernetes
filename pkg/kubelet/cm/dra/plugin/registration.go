@@ -179,9 +179,23 @@ func (h *RegistrationHandler) RegisterPlugin(pluginName string, endpoint string,
 
 	// Storing endpoint of newly registered DRA Plugin into the map, where plugin name will be the key
 	// all other DRA components will be able to get the actual socket of DRA plugins by its name.
-	if draPlugins.add(pluginInstance) {
+	if _, replaced := draPlugins.add(pluginName, pluginInstance); replaced {
 		logger.V(1).Info("Already registered, previous plugin was replaced")
+
+		//TODO(SergeyKanzhelev): this doesn't seem right, need to fix how the old plugin got deleted properly
+		//if oldPlugin.cancel != nil {
+		//	oldPlugin.cancel(errors.New("plugin	replaced"))
+		//}
 	}
+
+	//stream, err := pluginInstance.WatchResources(ctx, &v1alpha4.WatchResourcesRequest{}, pluginName)
+
+	//if err != nil {
+	//	logger.Error(err, "Failed to start WatchResources stream")
+	//	return err
+	//}
+	//
+	//h.draManager.HandleWatchResourcesStream(ctx, stream, pluginName)
 
 	return nil
 }

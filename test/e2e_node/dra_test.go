@@ -189,6 +189,50 @@ var _ = framework.SIGDescribe("node")("DRA", feature.DynamicResourceAllocation, 
 			framework.ExpectNoError(err)
 		})
 
+		ginkgo.It("must run pod if NodePrepareResources fails and then succeed and set Pod Status to Unknown", func(ctx context.Context) {
+			kubeletPlugin := newKubeletPlugin(ctx, f.ClientSet, getNodeName(ctx, f), driverName)
+
+			unsetNodePrepareResourcesFailureMode := kubeletPlugin.SetNodePrepareResourcesFailureMode()
+			pod := createTestObjects(ctx, f.ClientSet, getNodeName(ctx, f), f.Namespace.Name, "draclass", "external-claim", "drapod", true, []string{driverName})
+
+			ginkgo.By("wait for pod to be in Pending state")
+			err := e2epod.WaitForPodCondition(ctx, f.ClientSet, f.Namespace.Name, pod.Name, "Pending", framework.PodStartShortTimeout, func(pod *v1.Pod) (bool, error) {
+				return pod.Status.Phase == v1.PodPending, nil
+			})
+			framework.ExpectNoError(err)
+
+			ginkgo.By("wait for NodePrepareResources call to fail")
+			gomega.Eventually(kubeletPlugin.GetGRPCCalls).WithTimeout(retryTestTimeout).Should(testdriver.NodePrepareResourcesFailed)
+
+			unsetNodePrepareResourcesFailureMode()
+
+			ginkgo.By("wait for NodePrepareResources call to succeed")
+			gomega.Eventually(kubeletPlugin.GetGRPCCalls).WithTimeout(retryTestTimeout).Should(testdriver.NodePrepareResourcesSucceeded)
+
+			ginkgo.By("wait for pod to succeed")
+			err = e2epod.WaitForPodSuccessInNamespace(ctx, f.ClientSet, pod.Name, f.Namespace.Name)
+			framework.ExpectNoError(err)
+
+			expectedStatus := []v1.ResourceStatus{
+				{
+					Name: v1.ResourceName("resourceName"),
+					Resources: []v1.ResourceHealth{
+						{
+							ResourceID: "testdevice",
+							Health:     v1.ResourceHealthStatusHealthy,
+						},
+					},
+				},
+			}
+
+			gomega.Eventually(func() []v1.ResourceStatus {
+				pod, err = f.ClientSet.CoreV1().Pods(f.Namespace.Name).Get(ctx, pod.Name, metav1.GetOptions{})
+				framework.Logf("%v+", pod)
+				return pod.Status.ContainerStatuses[0].AllocatedResourcesStatus
+			}, time.Minute, f.Timeouts.Poll).Should(gomega.Equal(expectedStatus))
+
+		})
+
 		ginkgo.It("must run pod if NodeUnprepareResources fails and then succeeds", func(ctx context.Context) {
 			kubeletPlugin := newKubeletPlugin(ctx, f.ClientSet, getNodeName(ctx, f), driverName)
 

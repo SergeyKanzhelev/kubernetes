@@ -171,6 +171,27 @@ func (p *Plugin) NodeUnprepareResources(
 	return response, err
 }
 
+func (p *Plugin) WatchResources(ctx context.Context,
+	req *drapbv1alpha4.WatchResourcesRequest,
+	resourceName string,
+	opts ...grpc.CallOption,
+) (drapbv1alpha4.Node_WatchResourcesClient, error) {
+	logger := klog.FromContext(ctx)
+	logger.Info("Starting WatchResources", "request", req)
+
+	conn, err := p.getOrCreateGRPCConn()
+	if err != nil {
+		return nil, err
+	}
+
+	nodeClient := drapbv1alpha4.NewNodeClient(conn)
+
+	stream, err := nodeClient.WatchResources(ctx, req)
+
+	logger.Info("Done starting WatchResources")
+	return stream, err
+}
+
 func newMetricsInterceptor(pluginName string) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, conn *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		start := time.Now()
