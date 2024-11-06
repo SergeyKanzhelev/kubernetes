@@ -30,8 +30,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"k8s.io/klog/v2"
-	drapbv1alpha4 "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
-	drapbv1beta1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	"k8s.io/kubernetes/pkg/kubelet/metrics"
 )
 
@@ -60,7 +59,7 @@ type Plugin struct {
 	mutex             sync.Mutex
 	conn              *grpc.ClientConn
 	endpoint          string
-	chosenService     string // e.g. drapbv1beta1.DRAPluginService
+	chosenService     string // e.g. drapb.DRAPluginService
 	clientCallTimeout time.Duration
 }
 
@@ -107,9 +106,9 @@ func (p *Plugin) getOrCreateGRPCConn() (*grpc.ClientConn, error) {
 
 func (p *Plugin) NodePrepareResources(
 	ctx context.Context,
-	req *drapbv1beta1.NodePrepareResourcesRequest,
+	req *drapb.NodePrepareResourcesRequest,
 	opts ...grpc.CallOption,
-) (*drapbv1beta1.NodePrepareResourcesResponse, error) {
+) (*drapb.NodePrepareResourcesResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(4).Info("Calling NodePrepareResources rpc", "request", req)
 
@@ -121,13 +120,10 @@ func (p *Plugin) NodePrepareResources(
 	ctx, cancel := context.WithTimeout(ctx, p.clientCallTimeout)
 	defer cancel()
 
-	var response *drapbv1beta1.NodePrepareResourcesResponse
+	var response *drapb.NodePrepareResourcesResponse
 	switch p.chosenService {
-	case drapbv1beta1.DRAPluginService:
-		nodeClient := drapbv1beta1.NewDRAPluginClient(conn)
-		response, err = nodeClient.NodePrepareResources(ctx, req)
-	case drapbv1alpha4.NodeService:
-		nodeClient := drapbv1alpha4.NewNodeClient(conn)
+	case drapb.DRAPluginService:
+		nodeClient := drapb.NewDRAPluginClient(conn)
 		response, err = nodeClient.NodePrepareResources(ctx, req)
 	default:
 		// Shouldn't happen, validateSupportedServices should only
@@ -140,9 +136,9 @@ func (p *Plugin) NodePrepareResources(
 
 func (p *Plugin) NodeUnprepareResources(
 	ctx context.Context,
-	req *drapbv1beta1.NodeUnprepareResourcesRequest,
+	req *drapb.NodeUnprepareResourcesRequest,
 	opts ...grpc.CallOption,
-) (*drapbv1beta1.NodeUnprepareResourcesResponse, error) {
+) (*drapb.NodeUnprepareResourcesResponse, error) {
 	logger := klog.FromContext(ctx)
 	logger.V(4).Info("Calling NodeUnprepareResource rpc", "request", req)
 
@@ -154,13 +150,10 @@ func (p *Plugin) NodeUnprepareResources(
 	ctx, cancel := context.WithTimeout(ctx, p.clientCallTimeout)
 	defer cancel()
 
-	var response *drapbv1beta1.NodeUnprepareResourcesResponse
+	var response *drapb.NodeUnprepareResourcesResponse
 	switch p.chosenService {
-	case drapbv1beta1.DRAPluginService:
-		nodeClient := drapbv1beta1.NewDRAPluginClient(conn)
-		response, err = nodeClient.NodeUnprepareResources(ctx, req)
-	case drapbv1alpha4.NodeService:
-		nodeClient := drapbv1alpha4.NewNodeClient(conn)
+	case drapb.DRAPluginService:
+		nodeClient := drapb.NewDRAPluginClient(conn)
 		response, err = nodeClient.NodeUnprepareResources(ctx, req)
 	default:
 		// Shouldn't happen, validateSupportedServices should only

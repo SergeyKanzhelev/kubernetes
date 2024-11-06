@@ -31,8 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	drapbv1alpha4 "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
-	drapbv1beta1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	"k8s.io/kubernetes/pkg/kubelet/pluginmanager/cache"
 )
 
@@ -199,8 +198,7 @@ func (h *RegistrationHandler) validateSupportedServices(pluginName string, suppo
 	chosenService := ""
 	for _, service := range []string{
 		// Sorted by most recent first, oldest last.
-		drapbv1beta1.DRAPluginService,
-		drapbv1alpha4.NodeService,
+		drapb.DRAPluginService,
 	} {
 		if slices.Contains(supportedServices, service) {
 			chosenService = service
@@ -211,7 +209,7 @@ func (h *RegistrationHandler) validateSupportedServices(pluginName string, suppo
 	// Fall back to alpha if necessary because
 	// plugins at that time didn't advertise gRPC services.
 	if chosenService == "" {
-		chosenService = drapbv1alpha4.NodeService
+		chosenService = drapb.DRAPluginService
 	}
 
 	return chosenService, nil

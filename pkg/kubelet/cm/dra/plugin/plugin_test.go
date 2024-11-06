@@ -28,20 +28,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	drapbv1alpha4 "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
-	drapbv1beta1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	"k8s.io/kubernetes/test/utils/ktesting"
 )
 
 type fakeGRPCServer struct {
-	drapbv1beta1.UnimplementedDRAPluginServer
+	drapb.UnimplementedDRAPluginServer
 }
 
-var _ drapbv1beta1.DRAPluginServer = &fakeGRPCServer{}
+var _ drapb.DRAPluginServer = &fakeGRPCServer{}
 
-func (f *fakeGRPCServer) NodePrepareResources(ctx context.Context, in *drapbv1beta1.NodePrepareResourcesRequest) (*drapbv1beta1.NodePrepareResourcesResponse, error) {
-	return &drapbv1beta1.NodePrepareResourcesResponse{Claims: map[string]*drapbv1beta1.NodePrepareResourceResponse{"claim-uid": {
-		Devices: []*drapbv1beta1.Device{
+func (f *fakeGRPCServer) NodePrepareResources(ctx context.Context, in *drapb.NodePrepareResourcesRequest) (*drapb.NodePrepareResourcesResponse, error) {
+	return &drapb.NodePrepareResourcesResponse{Claims: map[string]*drapb.NodePrepareResourceResponse{"claim-uid": {
+		Devices: []*drapb.Device{
 			{
 				RequestNames: []string{"test-request"},
 				CDIDeviceIDs: []string{"test-cdi-id"},
@@ -50,9 +49,9 @@ func (f *fakeGRPCServer) NodePrepareResources(ctx context.Context, in *drapbv1be
 	}}}, nil
 }
 
-func (f *fakeGRPCServer) NodeUnprepareResources(ctx context.Context, in *drapbv1beta1.NodeUnprepareResourcesRequest) (*drapbv1beta1.NodeUnprepareResourcesResponse, error) {
+func (f *fakeGRPCServer) NodeUnprepareResources(ctx context.Context, in *drapb.NodeUnprepareResourcesRequest) (*drapb.NodeUnprepareResourcesResponse, error) {
 
-	return &drapbv1beta1.NodeUnprepareResourcesResponse{}, nil
+	return &drapb.NodeUnprepareResourcesResponse{}, nil
 }
 
 type tearDown func()
@@ -81,10 +80,10 @@ func setupFakeGRPCServer(service string) (string, tearDown, error) {
 	s := grpc.NewServer()
 	fakeGRPCServer := &fakeGRPCServer{}
 	switch service {
-	case drapbv1beta1.DRAPluginService:
-		drapbv1beta1.RegisterDRAPluginServer(s, fakeGRPCServer)
-	case drapbv1alpha4.NodeService:
-		drapbv1alpha4.RegisterNodeServer(s, fakeGRPCServer)
+	case drapb.DRAPluginService:
+		drapb.RegisterDRAPluginServer(s, fakeGRPCServer)
+	case drapb.NodeService:
+		drapb.RegisterNodeServer(s, fakeGRPCServer)
 	default:
 		return "", nil, fmt.Errorf("unsupported gRPC service: %s", service)
 	}
@@ -104,7 +103,7 @@ func setupFakeGRPCServer(service string) (string, tearDown, error) {
 
 func TestGRPCConnIsReused(t *testing.T) {
 	tCtx := ktesting.Init(t)
-	service := drapbv1beta1.DRAPluginService
+	service := drapb.DRAPluginService
 	addr, teardown, err := setupFakeGRPCServer(service)
 	if err != nil {
 		t.Fatal(err)
@@ -150,8 +149,8 @@ func TestGRPCConnIsReused(t *testing.T) {
 				return
 			}
 
-			req := &drapbv1beta1.NodePrepareResourcesRequest{
-				Claims: []*drapbv1beta1.Claim{
+			req := &drapb.NodePrepareResourcesRequest{
+				Claims: []*drapb.Claim{
 					{
 						Namespace: "dummy-namespace",
 						UID:       "dummy-uid",
@@ -250,14 +249,14 @@ func TestGRPCMethods(t *testing.T) {
 		{
 			description:   "v1beta1",
 			serverSetup:   setupFakeGRPCServer,
-			service:       drapbv1beta1.DRAPluginService,
-			chosenService: drapbv1beta1.DRAPluginService,
+			service:       drapb.DRAPluginService,
+			chosenService: drapb.DRAPluginService,
 		},
 		{
 			// In practice, such a mismatch between plugin and kubelet should not happen.
 			description:   "mismatch",
 			serverSetup:   setupFakeGRPCServer,
-			service:       drapbv1beta1.DRAPluginService,
+			service:       drapb.DRAPluginService,
 			chosenService: drapbv1alpha4.NodeService,
 			expectError:   "unknown service v1alpha3.Node",
 		},
@@ -265,7 +264,7 @@ func TestGRPCMethods(t *testing.T) {
 			// In practice, kubelet wouldn't choose an invalid service.
 			description:   "internal-error",
 			serverSetup:   setupFakeGRPCServer,
-			service:       drapbv1beta1.DRAPluginService,
+			service:       drapb.DRAPluginService,
 			chosenService: "some-other-service",
 			expectError:   "unsupported chosen service",
 		},
@@ -306,10 +305,10 @@ func TestGRPCMethods(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, err = client.NodePrepareResources(tCtx, &drapbv1beta1.NodePrepareResourcesRequest{})
+			_, err = client.NodePrepareResources(tCtx, &drapb.NodePrepareResourcesRequest{})
 			assertError(t, test.expectError, err)
 
-			_, err = client.NodeUnprepareResources(tCtx, &drapbv1beta1.NodeUnprepareResourcesRequest{})
+			_, err = client.NodeUnprepareResources(tCtx, &drapb.NodeUnprepareResourcesRequest{})
 			assertError(t, test.expectError, err)
 		})
 	}

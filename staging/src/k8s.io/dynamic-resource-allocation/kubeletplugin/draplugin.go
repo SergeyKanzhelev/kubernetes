@@ -30,8 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/dynamic-resource-allocation/resourceslice"
-	drapbv1alpha4 "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
-	drapbv1beta1 "k8s.io/kubelet/pkg/apis/dra/v1beta1"
+	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	registerapi "k8s.io/kubelet/pkg/apis/pluginregistration/v1"
 )
 
@@ -338,15 +337,10 @@ func Start(ctx context.Context, nodeServer interface{}, opts ...Option) (result 
 	// Run the node plugin gRPC server first to ensure that it is ready.
 	var supportedServices []string
 	plugin, err := startGRPCServer(klog.NewContext(ctx, klog.LoggerWithName(logger, "dra")), o.grpcVerbosity, o.unaryInterceptors, o.streamInterceptors, o.draEndpoint, func(grpcServer *grpc.Server) {
-		if nodeServer, ok := nodeServer.(drapbv1alpha4.NodeServer); ok && o.nodeV1alpha4 {
-			logger.V(5).Info("registering v1alpha4.Node gGRPC service")
-			drapbv1alpha4.RegisterNodeServer(grpcServer, nodeServer)
-			supportedServices = append(supportedServices, drapbv1alpha4.NodeService)
-		}
-		if nodeServer, ok := nodeServer.(drapbv1beta1.DRAPluginServer); ok && o.nodeV1beta1 {
+		if nodeServer, ok := nodeServer.(drapb.DRAPluginServer); ok && o.nodeV1beta1 {
 			logger.V(5).Info("registering v1beta1.DRAPlugin gRPC service")
-			drapbv1beta1.RegisterDRAPluginServer(grpcServer, nodeServer)
-			supportedServices = append(supportedServices, drapbv1beta1.DRAPluginService)
+			drapb.RegisterDRAPluginServer(grpcServer, nodeServer)
+			supportedServices = append(supportedServices, drapb.DRAPluginService)
 		}
 	})
 	if err != nil {
@@ -355,15 +349,6 @@ func Start(ctx context.Context, nodeServer interface{}, opts ...Option) (result 
 	d.plugin = plugin
 	if len(supportedServices) == 0 {
 		return nil, errors.New("no supported DRA gRPC API is implemented and enabled")
-	}
-
-	// Backwards compatibility hack: if only the alpha gRPC service is enabled,
-	// then we can support registration against a 1.31 kubelet by reporting "1.0.0"
-	// as version. That also works with 1.32 because 1.32 supports that legacy
-	// behavior and 1.31 works because it doesn't fail while parsing "v1alpha3.Node"
-	// as version.
-	if len(supportedServices) == 1 && supportedServices[0] == drapbv1alpha4.NodeService {
-		supportedServices = []string{"1.0.0"}
 	}
 
 	// Now make it available to kubelet.

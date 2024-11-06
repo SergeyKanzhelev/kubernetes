@@ -34,7 +34,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	cgotesting "k8s.io/client-go/testing"
-	drapbv1alpha4 "k8s.io/kubelet/pkg/apis/dra/v1alpha4"
 	drapb "k8s.io/kubelet/pkg/apis/dra/v1beta1"
 	"k8s.io/kubernetes/test/utils/ktesting"
 	"k8s.io/utils/ptr"
@@ -86,15 +85,15 @@ func TestRegistrationHandler(t *testing.T) {
 			description:       "two-services",
 			pluginName:        pluginB,
 			endpoint:          endpointB,
-			supportedServices: []string{drapbv1alpha4.NodeService, drapb.DRAPluginService},
+			supportedServices: []string{drapb.NodeService, drapb.DRAPluginService},
 			chosenService:     drapb.DRAPluginService,
 		},
 		{
 			description:       "old-service",
 			pluginName:        pluginB,
 			endpoint:          endpointB,
-			supportedServices: []string{drapbv1alpha4.NodeService},
-			chosenService:     drapbv1alpha4.NodeService,
+			supportedServices: []string{drapb.NodeService},
+			chosenService:     drapb.NodeService,
 		},
 		{
 			// Legacy behavior.
@@ -102,7 +101,7 @@ func TestRegistrationHandler(t *testing.T) {
 			pluginName:        pluginB,
 			endpoint:          endpointB,
 			supportedServices: []string{"1.0.0"},
-			chosenService:     drapbv1alpha4.NodeService,
+			chosenService:     drapb.NodeService,
 		},
 		{
 			description:       "replace",
