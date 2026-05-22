@@ -276,11 +276,14 @@ define TEST_E2E_NODE_HELP_INFO
 #  E2E_TEST_DEBUG_TOOL: one of dlv/delve/gdb. Runs the test/e2e_node test binary
 #    interactively under the chosen debugger. Only works for REMOTE=false and
 #    in combination with DBG=1.
+#  DOCKER: Run tests in a local docker container. Defaults to false.
+#  DOCKER_IMAGE: Docker image to use for local dockerized tests.
 #
 # Example:
 #   make test-e2e-node FOCUS=Kubelet SKIP=container
 #   make test-e2e-node REMOTE=true DELETE_INSTANCES=true
 #   make test-e2e-node TEST_ARGS='--kubelet-flags="--cgroups-per-qos=true"'
+#   make test-e2e-node DOCKER=true
 # Build and run tests.
 endef
 .PHONY: test-e2e-node
@@ -291,6 +294,10 @@ else
 test-e2e-node: ginkgo
 	hack/make-rules/test-e2e-node.sh
 endif
+
+.PHONY: test-e2e-node-image
+test-e2e-node-image:
+	docker build -t e2e-node-test:ubuntu-24.04 test/e2e_node/runner/local/docker
 
 define TEST_CMD_HELP_INFO
 # Build and run cmdline tests.

@@ -43,6 +43,8 @@ fi
 parallelism=${PARALLELISM:-8}
 artifacts="${ARTIFACTS:-"/tmp/_artifacts/$(date +%y%m%dT%H%M%S)"}"
 remote=${REMOTE:-"false"}
+docker=${DOCKER:-"false"}
+docker_image=${DOCKER_IMAGE:-"e2e-node-test:ubuntu-24.04"}
 remote_mode=${REMOTE_MODE:-"gce"}
 container_runtime_endpoint=${CONTAINER_RUNTIME_ENDPOINT:-"unix:///run/containerd/containerd.sock"}
 image_service_endpoint=${IMAGE_SERVICE_ENDPOINT:-""}
@@ -278,6 +280,8 @@ else
   # Test using the host the script was run on
   # Provided for backwards compatibility
   go run test/e2e_node/runner/local/run_local.go \
+    --use-docker="${docker}" \
+    --docker-image="${docker_image}" \
     --debug-tool="${debug_tool}" \
     --system-spec-name="${system_spec_name}" --extra-envs="${extra_envs}" \
     --ginkgo-flags="${ginkgoflags}" \

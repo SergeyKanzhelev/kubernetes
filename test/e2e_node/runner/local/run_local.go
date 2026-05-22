@@ -40,6 +40,8 @@ var extraEnvs = flag.String("extra-envs", "", "The extra environment variables n
 var runtimeConfig = flag.String("runtime-config", "", "The runtime configuration for the API server on the node e2e tests. Format: a list of key=value pairs, e.g., env1=val1,env2=val2")
 var kubeletConfigFile = flag.String("kubelet-config-file", "", "The KubeletConfiguration file that should be applied to the kubelet")
 var debugTool = flag.String("debug-tool", "", "'delve', 'dlv' or 'gdb': run e2e_node.test under that debugger")
+var useDocker = flag.Bool("use-docker", false, "If true, run tests in a local docker container.")
+var dockerImage = flag.String("docker-image", "", "Docker image to use for local dockerized tests.")
 
 func main() {
 	copyFlags(builder.CommandLine, flag.CommandLine)
@@ -125,10 +127,50 @@ func addGinkgoArgPrefix(ginkgoFlags string) string {
 }
 
 func runCommand(interactive bool, name string, args ...string) error {
-	klog.Infof("Running command: %v %v", name, strings.Join(args, " "))
-	// Using sh is necessary because the args are using POSIX quoting.
-	// sh has to parse that.
-	cmd := exec.Command("sudo", "sh", "-c", strings.Join(append([]string{name}, args...), " "))
+	var cmd *exec.Cmd
+	if *useDocker {
+		k8sRoot, err := utils.GetK8sRootDir()
+		if err != nil {
+			return fmt.Errorf("failed to get k8s root directory: %v", err)
+		}
+		dockerArgs := []string{
+			"run", "--rm", "--privileged", "--net=host", "--pid=host",
+			"-v", "/:/rootfs",
+			"-v", "/var/run:/var/run",
+			"-v", "/run:/run",
+			"-v", "/sys:/sys",
+			"-v", "/dev:/dev",
+			"-v", "/lib/modules:/lib/modules",
+			"-v", "/var/lib/docker:/var/lib/docker",
+			"-v", "/var/lib/kubelet:/var/lib/kubelet",
+			"-v", fmt.Sprintf("%s:%s", k8sRoot, k8sRoot),
+			"-w", k8sRoot,
+		}
+		// Extract report-dir to mount it
+		reportDir := ""
+		re := regexp.MustCompile(`--report-dir=([^ ]+)`)
+		matches := re.FindStringSubmatch(*testFlags)
+		if len(matches) > 1 {
+			reportDir = matches[1]
+		}
+		if reportDir != "" {
+			// Ensure reportDir is absolute
+			if !filepath.IsAbs(reportDir) {
+				reportDir = filepath.Join(k8sRoot, reportDir)
+			}
+			dockerArgs = append(dockerArgs, "-v", fmt.Sprintf("%s:%s", reportDir, reportDir))
+		}
+		dockerArgs = append(dockerArgs, *dockerImage)
+		dockerArgs = append(dockerArgs, "sh", "-c", strings.Join(append([]string{name}, args...), " "))
+		klog.Infof("Running command: docker %v", strings.Join(dockerArgs, " "))
+		cmd = exec.Command("docker", dockerArgs...)
+	} else {
+		klog.Infof("Running command: sudo sh -c %v %v", name, strings.Join(args, " "))
+		// Using sh is necessary because the args are using POSIX quoting.
+		// sh has to parse that.
+		cmd = exec.Command("sudo", "sh", "-c", strings.Join(append([]string{name}, args...), " "))
+	}
+
 	if interactive {
 		// stdin must be a console.
 		cmd.Stdin = os.Stdin
