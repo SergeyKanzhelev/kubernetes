@@ -717,6 +717,13 @@ func NewMainKubelet(ctx context.Context,
 		klet.syncPodNow,
 		klet.GetActivePods,
 		klet.podManager.GetPodByUID,
+		func(ctx context.Context, pod *v1.Pod, reason, message string) {
+			// Pods rejected after their deferred admission times out are
+			// admission rejections too; record the metric the same way the
+			// synchronous rejection path in HandlePodAdditions does.
+			recordAdmissionRejection(reason)
+			klet.rejectPod(ctx, pod, reason, message)
+		},
 		klet.sourcesReady,
 		kubeDeps.Recorder,
 		logger,
@@ -2891,7 +2898,16 @@ func (kl *Kubelet) HandlePodAdditions(ctx context.Context, pods []*v1.Pod) {
 			// Check if we can admit the pod; if not, reject it.
 			// We failed pods that we rejected, so activePods include all admitted
 			// pods that are alive.
-			if ok, reason, message := kl.allocationManager.AddPod(ctx, kl.GetActivePods(), pod); !ok {
+			if ok, deferred, reason, message := kl.allocationManager.AddPod(ctx, kl.GetActivePods(), pod); !ok {
+				if deferred {
+					// Admission failed but is deferrable (e.g. a device plugin has
+					// not yet registered). Keep the pod Pending instead of failing
+					// it: do not reject it, and do not dispatch it to the pod
+					// workers. The allocation manager will retry admission and will
+					// reject the pod if it eventually times out.
+					logger.V(2).Info("Pod admission deferred; keeping pod pending until it can be admitted or times out", "pod", klog.KObj(pod), "reason", reason, "message", message)
+					continue
+				}
 				kl.rejectPod(ctx, pod, reason, message)
 				// We avoid recording the metric in canAdmitPod because it's called
 				// repeatedly during a resize, which would inflate the metric.
