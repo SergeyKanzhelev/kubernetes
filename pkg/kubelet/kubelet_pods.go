@@ -1368,6 +1368,16 @@ func (kl *Kubelet) HandlePodCleanups(ctx context.Context) error {
 			continue
 		}
 
+		// A pod whose admission has been deferred (e.g. it requests a device
+		// plugin resource that is not yet registered) is intentionally not known
+		// to the pod workers: HandlePodAdditions kept it Pending without
+		// dispatching it. Such a pod is not admitted, so it must not be started
+		// here. The allocation manager retries its admission and will dispatch it
+		// once it is admitted, or reject it if the deferral times out.
+		if kl.allocationManager.IsPodAdmissionDeferred(desiredPod.UID) {
+			continue
+		}
+
 		logger.V(3).Info("Pod will be restarted because it is in the desired set and not known to the pod workers (likely due to UID reuse)", "podUID", desiredPod.UID)
 		isStatic := kubetypes.IsStaticPod(desiredPod)
 		pod, mirrorPod, wasMirror := kl.podManager.GetPodAndMirrorPod(desiredPod)

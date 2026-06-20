@@ -125,6 +125,12 @@ type Manager interface {
 	// Pods that can now be admitted are synced; pods that have exceeded the
 	// deferral timeout are permanently rejected.
 	RetryDeferredAdmissions(ctx context.Context)
+
+	// IsPodAdmissionDeferred reports whether the given pod's admission is
+	// currently deferred (kept Pending and awaiting retry, e.g. because a device
+	// plugin has not yet registered). Such a pod has not been admitted and must
+	// not be dispatched to the pod workers.
+	IsPodAdmissionDeferred(uid types.UID) bool
 }
 
 type manager struct {
@@ -610,6 +616,15 @@ func (m *manager) RemoveOrphanedPods(remainingPods sets.Set[types.UID]) {
 
 func (m *manager) RetryDeferredAdmissions(ctx context.Context) {
 	m.retryDeferredAdmissions(ctx)
+}
+
+// IsPodAdmissionDeferred reports whether the given pod's admission is currently
+// deferred. Callers must not hold allocationMutex when calling this.
+func (m *manager) IsPodAdmissionDeferred(uid types.UID) bool {
+	m.allocationMutex.Lock()
+	defer m.allocationMutex.Unlock()
+	_, deferred := m.podsWithDeferredAdmission[uid]
+	return deferred
 }
 
 // retryDeferredAdmissions re-runs admission for every pod whose admission was
