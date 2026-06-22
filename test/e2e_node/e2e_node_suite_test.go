@@ -64,6 +64,11 @@ import (
 	_ "k8s.io/kubernetes/test/e2e/framework/debug/init"
 	_ "k8s.io/kubernetes/test/e2e/framework/metrics/init"
 	_ "k8s.io/kubernetes/test/e2e/framework/node/init"
+
+	"k8s.io/kubernetes/test/e2e_node/nodeutil"
+
+	// test sources
+	_ "k8s.io/kubernetes/test/e2e_node/standalone"
 	"k8s.io/kubernetes/test/utils/ktesting"
 	_ "k8s.io/kubernetes/test/utils/ktesting/format"
 
@@ -333,6 +338,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func(ctx context.Context) []byte {
 	var err error
 	kubeletCfg, err = getCurrentKubeletConfig(ctx)
 	framework.ExpectNoError(err)
+	nodeutil.KubeletCfg = kubeletCfg
 })
 
 // Tear down the kubelet on the node

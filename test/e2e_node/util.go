@@ -26,7 +26,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -42,16 +41,13 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/featuregate"
-	internalapi "k8s.io/cri-api/pkg/apis"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
-	remote "k8s.io/cri-client/pkg"
 	"k8s.io/klog/v2"
 	kubeletpodresourcesv1 "k8s.io/kubelet/pkg/apis/podresources/v1"
 	kubeletpodresourcesv1alpha1 "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 	"k8s.io/kubelet/pkg/types"
 	"k8s.io/kubernetes/pkg/cluster/ports"
-	"k8s.io/kubernetes/pkg/features"
 	kubeletconfig "k8s.io/kubernetes/pkg/kubelet/apis/config"
 	"k8s.io/kubernetes/pkg/kubelet/apis/podresources"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
@@ -62,6 +58,7 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2emetrics "k8s.io/kubernetes/test/e2e/framework/metrics"
 	e2enode "k8s.io/kubernetes/test/e2e/framework/node"
+	"k8s.io/kubernetes/test/e2e_node/nodeutil"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 
 	"github.com/onsi/ginkgo/v2"
@@ -88,7 +85,7 @@ const (
 )
 
 var (
-	kubeletHealthCheckURL    = fmt.Sprintf("http://127.0.0.1:%d/healthz", ports.KubeletHealthzPort)
+	kubeletHealthCheckURL    = nodeutil.KubeletHealthCheckURL
 	containerRuntimeUnitName = ""
 	// KubeletConfig is the kubelet configuration the test is running against.
 	kubeletCfg *kubeletconfig.KubeletConfiguration
@@ -291,56 +288,13 @@ func logKubeletLatencyMetrics(ctx context.Context, metricNames ...string) {
 }
 
 // getCRIClient connects CRI and returns CRI runtime service clients and image service client.
-func getCRIClient(ctx context.Context) (internalapi.RuntimeService, internalapi.ImageManagerService, error) {
-	// connection timeout for CRI service connection
-	const connectionTimeout = 2 * time.Minute
-	runtimeEndpoint := framework.TestContext.ContainerRuntimeEndpoint
-	useStreaming := utilfeature.DefaultFeatureGate.Enabled(features.CRIListStreaming)
-	r, err := remote.NewRemoteRuntimeServiceBuilder().
-		WithEndpoint(runtimeEndpoint).
-		WithConnectionTimeout(connectionTimeout).
-		WithUseStreaming(useStreaming).
-		Build(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	imageManagerEndpoint := runtimeEndpoint
-	if framework.TestContext.ImageServiceEndpoint != "" {
-		//ImageServiceEndpoint is the same as ContainerRuntimeEndpoint if not
-		//explicitly specified
-		imageManagerEndpoint = framework.TestContext.ImageServiceEndpoint
-	}
-	i, err := remote.NewRemoteImageServiceBuilder().
-		WithEndpoint(imageManagerEndpoint).
-		WithConnectionTimeout(connectionTimeout).
-		WithUseStreaming(useStreaming).
-		Build(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return r, i, nil
-}
+var getCRIClient = nodeutil.GetCRIClient
 
 // findKubeletServiceName searches the unit name among the services known to systemd.
 // if the `running` parameter is true, restricts the search among currently running services;
 // otherwise, also stopped, failed, exited (non-running in general) services are also considered.
 // TODO: Find a uniform way to deal with systemctl/initctl/service operations. #34494
-func findKubeletServiceName(running bool) string {
-	cmdLine := []string{
-		"systemctl", "list-units", "*kubelet*",
-	}
-	if running {
-		cmdLine = append(cmdLine, "--state=running")
-	}
-	stdout, err := exec.Command("sudo", cmdLine...).CombinedOutput()
-	framework.ExpectNoError(err)
-	regex := regexp.MustCompile("(kubelet-\\w+)")
-	matches := regex.FindStringSubmatch(string(stdout))
-	gomega.Expect(matches).ToNot(gomega.BeEmpty(), "Found more than one kubelet service running: %q", stdout)
-	kubeletServiceName := matches[0]
-	framework.Logf("Get running kubelet with systemctl: %v, %v", string(stdout), kubeletServiceName)
-	return kubeletServiceName
-}
+var findKubeletServiceName = nodeutil.FindKubeletServiceName
 
 func findContainerRuntimeServiceName() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -416,15 +370,7 @@ func startContainerRuntime() error {
 // Warning: the "current" kubelet is poorly defined. The "current" kubelet is assumed to be the most
 // recent kubelet service unit, IOW there is not a unique ID we use to bind explicitly a kubelet
 // instance to a test run.
-func restartKubelet(ctx context.Context, running bool) {
-	kubeletServiceName := findKubeletServiceName(running)
-	// reset the kubelet service start-limit-hit
-	stdout, err := exec.CommandContext(ctx, "sudo", "systemctl", "reset-failed", kubeletServiceName).CombinedOutput()
-	framework.ExpectNoError(err, "Failed to reset kubelet start-limit-hit with systemctl: %v, %s", err, string(stdout))
-
-	stdout, err = exec.CommandContext(ctx, "sudo", "systemctl", "restart", kubeletServiceName).CombinedOutput()
-	framework.ExpectNoError(err, "Failed to restart kubelet with systemctl: %v, %s", err, string(stdout))
-}
+var restartKubelet = nodeutil.RestartKubelet
 
 // mustStopKubelet will kill the running kubelet, and returns a func that will restart the process again
 func mustStopKubelet(ctx context.Context, f *framework.Framework) func(ctx context.Context) {

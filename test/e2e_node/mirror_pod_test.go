@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -36,6 +35,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2epod "k8s.io/kubernetes/test/e2e/framework/pod"
+	"k8s.io/kubernetes/test/e2e_node/nodeutil"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"sigs.k8s.io/yaml"
@@ -555,9 +555,7 @@ func createStaticPodUsingNfs(nfsIP string, nodeName string, cmd string, dir stri
 	return nil
 }
 
-func staticPodPath(dir, name, namespace string) string {
-	return filepath.Join(dir, namespace+"-"+name+".yaml")
-}
+var staticPodPath = nodeutil.StaticPodPath
 
 func createStaticPod(dir, name, namespace, image string, restart v1.RestartPolicy) error {
 	podSpec := v1.PodSpec{
@@ -639,10 +637,7 @@ func createStaticPodWithInitContainer(dir, name, namespace, image, initImage str
 	return createStaticPodWithSpec(dir, name, namespace, podSpec)
 }
 
-func deleteStaticPod(dir, name, namespace string) error {
-	file := staticPodPath(dir, name, namespace)
-	return os.Remove(file)
-}
+var deleteStaticPod = nodeutil.DeleteStaticPod
 
 func checkMirrorPodDisappear(ctx context.Context, cl clientset.Interface, name, namespace string) error {
 	_, err := cl.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})

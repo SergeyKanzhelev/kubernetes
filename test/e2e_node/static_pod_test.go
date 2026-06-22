@@ -20,13 +20,13 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/kubernetes/test/e2e/framework"
+	"k8s.io/kubernetes/test/e2e_node/nodeutil"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 	admissionapi "k8s.io/pod-security-admission/api"
 	"k8s.io/utils/ptr"
@@ -201,14 +201,4 @@ func createStaticPodFromPod(dir string, pod *v1.Pod) (string, error) {
 	return file, y.PrintObj(pod, f)
 }
 
-func removeInitContainer(ctx context.Context, ctrID string) {
-	cricli, _, err := getCRIClient(ctx)
-	framework.ExpectNoError(err)
-	splitID := strings.Split(ctrID, "://")
-	gomega.Expect(splitID).To(gomega.HaveLen(2))
-	ctrID = splitID[1]
-	// Make sure the container is stopped before removing it. This may fail.
-	_ = cricli.StopContainer(ctx, ctrID, 0)
-	err = cricli.RemoveContainer(ctx, ctrID)
-	framework.ExpectNoError(err)
-}
+var removeInitContainer = nodeutil.RemoveInitContainer

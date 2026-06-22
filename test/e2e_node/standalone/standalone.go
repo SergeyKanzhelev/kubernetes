@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2enode
+package standalone
 
 import (
 	"context"
@@ -43,10 +43,14 @@ import (
 	"k8s.io/kubernetes/test/e2e/feature"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2enode "k8s.io/kubernetes/test/e2e/framework/node"
+	"k8s.io/kubernetes/test/e2e_node/nodeutil"
 	testutils "k8s.io/kubernetes/test/utils"
 	imageutils "k8s.io/kubernetes/test/utils/image"
 	admissionapi "k8s.io/pod-security-admission/api"
 )
+
+// SIGDescribe annotates the test with the SIG label.
+var SIGDescribe = framework.SIGDescribe("node")
 
 var _ = SIGDescribe(feature.StandaloneMode, framework.WithFeatureGate(features.EnvFiles), func() {
 	f := framework.NewDefaultFramework("static-pod-envfiles")
@@ -57,7 +61,7 @@ var _ = SIGDescribe(feature.StandaloneMode, framework.WithFeatureGate(features.E
 		ginkgo.It("the pod should be running and consume variables", func(ctx context.Context) {
 			ns = f.Namespace.Name
 			staticPodName = "static-pod-envfiles-" + string(uuid.NewUUID())
-			podPath = kubeletCfg.StaticPodPath
+			podPath = nodeutil.KubeletCfg.StaticPodPath
 
 			podSpec := &v1.Pod{
 				TypeMeta: metav1.TypeMeta{
@@ -153,7 +157,7 @@ var _ = SIGDescribe(feature.StandaloneMode, framework.WithFeatureGate(features.E
 
 		ginkgo.AfterEach(func(ctx context.Context) {
 			ginkgo.By(fmt.Sprintf("delete the static pod (%v/%v)", ns, staticPodName))
-			err := deleteStaticPod(podPath, staticPodName, ns)
+			err := nodeutil.DeleteStaticPod(podPath, staticPodName, ns)
 			framework.ExpectNoError(err)
 
 			ginkgo.By(fmt.Sprintf("wait for pod to disappear (%v/%v)", ns, staticPodName))
@@ -178,7 +182,7 @@ var _ = SIGDescribe(feature.StandaloneMode, func() {
 		ginkgo.It("the pod should be running", func(ctx context.Context) {
 			ns = f.Namespace.Name
 			staticPodName = "static-pod-" + string(uuid.NewUUID())
-			podPath = kubeletCfg.StaticPodPath
+			podPath = nodeutil.KubeletCfg.StaticPodPath
 
 			err := scheduleStaticPod(podPath, staticPodName, ns, createBasicStaticPodSpec(staticPodName, ns))
 			framework.ExpectNoError(err)
@@ -203,7 +207,7 @@ var _ = SIGDescribe(feature.StandaloneMode, func() {
 		ginkgo.It("the pod with the port on host network should be running and can be upgraded when the container name changes", func(ctx context.Context) {
 			ns = f.Namespace.Name
 			staticPodName = "static-pod-" + string(uuid.NewUUID())
-			podPath = kubeletCfg.StaticPodPath
+			podPath = nodeutil.KubeletCfg.StaticPodPath
 
 			podSpec := createBasicStaticPodSpec(staticPodName, ns)
 			podSpec.Spec.HostNetwork = true
@@ -259,68 +263,9 @@ var _ = SIGDescribe(feature.StandaloneMode, func() {
 			}, f.Timeouts.PodStart, time.Second*5).Should(gomega.BeNil())
 		})
 
-		// the test below is not working - pod update fails with the "Predicate NodePorts failed: node(s) didn't have free ports for the requested pod ports"
-		// ginkgo.It("the pod with the port on host network should be running and can be upgraded when namespace of a Pod changes", func(ctx context.Context) {
-		// 	ns = f.Namespace.Name
-		// 	staticPodName = "static-pod-" + string(uuid.NewUUID())
-		// 	podPath = kubeletCfg.StaticPodPath
-
-		// 	podSpec := createBasicStaticPodSpec(staticPodName, ns)
-		// 	podSpec.Spec.HostNetwork = true
-		// 	podSpec.Spec.Containers[0].Ports = []v1.ContainerPort{
-		// 		{
-		// 			Name:          "tcp",
-		// 			ContainerPort: 4534,
-		// 			Protocol:      v1.ProtocolTCP,
-		// 		},
-		// 	}
-		// 	err := scheduleStaticPod(podPath, staticPodName, ns, podSpec)
-		// 	framework.ExpectNoError(err)
-
-		// 	gomega.Eventually(ctx, func(ctx context.Context) error {
-		// 		pod, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
-		// 		if err != nil {
-		// 			return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", ns, staticPodName, err)
-		// 		}
-
-		// 		isReady, err := testutils.PodRunningReady(pod)
-		// 		if err != nil {
-		// 			return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", ns, staticPodName, err)
-		// 		}
-		// 		if !isReady {
-		// 			return fmt.Errorf("pod (%v/%v) is not running", ns, staticPodName)
-		// 		}
-		// 		return nil
-		// 	}, f.Timeouts.PodStart, time.Second*5).Should(gomega.BeNil())
-
-		// 	// Upgrade the pod
-		// 	upgradedNs := ns + "-upgraded"
-		// 	podSpec.Namespace = upgradedNs
-
-		// 	// use old namespace as it uses ns in a file name
-		// 	err = scheduleStaticPod(podPath, staticPodName, ns, podSpec)
-		// 	framework.ExpectNoError(err)
-
-		// 	gomega.Eventually(ctx, func(ctx context.Context) error {
-		// 		pod, err := getPodFromStandaloneKubelet(ctx, upgradedNs, staticPodName)
-		// 		if err != nil {
-		// 			return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", upgradedNs, staticPodName, err)
-		// 		}
-
-		// 		isReady, err := testutils.PodRunningReady(pod)
-		// 		if err != nil {
-		// 			return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", upgradedNs, staticPodName, err)
-		// 		}
-		// 		if !isReady {
-		// 			return fmt.Errorf("pod (%v/%v) is not running", upgradedNs, staticPodName)
-		// 		}
-		// 		return nil
-		// 	}, f.Timeouts.PodStart, time.Second*5).Should(gomega.BeNil())
-		// })
-
 		ginkgo.AfterEach(func(ctx context.Context) {
 			ginkgo.By(fmt.Sprintf("delete the static pod (%v/%v)", ns, staticPodName))
-			err := deleteStaticPod(podPath, staticPodName, ns)
+			err := nodeutil.DeleteStaticPod(podPath, staticPodName, ns)
 			framework.ExpectNoError(err)
 
 			ginkgo.By(fmt.Sprintf("wait for pod to disappear (%v/%v)", ns, staticPodName))
@@ -363,7 +308,7 @@ var _ = SIGDescribe(feature.StandaloneMode, func() {
 					},
 				}
 				staticPodName = staticPod.Name
-				podPath = kubeletCfg.StaticPodPath
+				podPath = nodeutil.KubeletCfg.StaticPodPath
 				ns = staticPod.Namespace
 				err := scheduleStaticPod(podPath, staticPod.Name, ns, staticPod)
 				framework.ExpectNoError(err)
@@ -384,12 +329,12 @@ var _ = SIGDescribe(feature.StandaloneMode, func() {
 				}, 2*time.Minute, 5*time.Second).Should(gomega.Succeed())
 
 				ginkgo.By("remove init container")
-				removeInitContainer(ctx, initCtrID)
+				nodeutil.RemoveInitContainer(ctx, initCtrID)
 
 				ginkgo.By("restart kubelet")
-				restartKubelet(ctx, true)
+				nodeutil.RestartKubelet(ctx, true)
 				gomega.Eventually(ctx, func() bool {
-					return e2enode.HealthCheck(kubeletHealthCheckURL)
+					return e2enode.HealthCheck(nodeutil.KubeletHealthCheckURL)
 				}, f.Timeouts.PodStart, f.Timeouts.Poll).Should(gomega.BeTrueBecause("kubelet should be started"))
 
 				ginkgo.By("wait for the mirror pod to be updated")
@@ -419,7 +364,7 @@ var _ = SIGDescribe("Pod Extended (RestartAllContainers)",
 		ginkgo.It("should restart all containers on regular container exit", func(ctx context.Context) {
 			ns := f.Namespace.Name
 			staticPodName := "static-pod-" + string(uuid.NewUUID())
-			podPath := kubeletCfg.StaticPodPath
+			podPath := nodeutil.KubeletCfg.StaticPodPath
 			var (
 				containerRestartPolicyAlways = v1.ContainerRestartPolicyAlways
 				containerRestartPolicyNever  = v1.ContainerRestartPolicyNever
@@ -513,6 +458,81 @@ var _ = SIGDescribe("Pod Extended (RestartAllContainers)",
 		})
 	})
 
+var _ = SIGDescribe(feature.StandaloneMode, framework.WithSerial(), func() {
+	f := framework.NewDefaultFramework("static-pod-serial")
+	f.NamespacePodSecurityLevel = admissionapi.LevelBaseline
+	ginkgo.Context("when creating a static pod and restarting kubelet", func() {
+		var ns, podPath, staticPodName string
+
+		ginkgo.BeforeEach(func() {
+			ns = f.Namespace.Name
+			staticPodName = "static-pod-" + string(uuid.NewUUID())
+			podPath = nodeutil.KubeletCfg.StaticPodPath
+		})
+
+		ginkgo.AfterEach(func(ctx context.Context) {
+			ginkgo.By(fmt.Sprintf("delete the static pod (%v/%v)", ns, staticPodName))
+			err := nodeutil.DeleteStaticPod(podPath, staticPodName, ns)
+			framework.ExpectNoError(err)
+
+			ginkgo.By(fmt.Sprintf("wait for pod to disappear (%v/%v)", ns, staticPodName))
+			gomega.Eventually(ctx, func(ctx context.Context) error {
+				_, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
+
+				if apierrors.IsNotFound(err) {
+					return nil
+				}
+				return fmt.Errorf("pod (%v/%v) still exists", ns, staticPodName)
+			}).Should(gomega.Succeed())
+		})
+
+		ginkgo.It("the pod should be running and kubelet not panic", func(ctx context.Context) {
+			err := scheduleStaticPod(podPath, staticPodName, ns, createBasicStaticPodSpec(staticPodName, ns))
+			framework.ExpectNoError(err)
+
+			ginkgo.By("Waiting for the pod to be running")
+			gomega.Eventually(ctx, func(ctx context.Context) error {
+				pod, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
+				if err != nil {
+					return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", ns, staticPodName, err)
+				}
+
+				isReady, err := testutils.PodRunningReady(pod)
+				if err != nil {
+					return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", ns, staticPodName, err)
+				}
+				if !isReady {
+					return fmt.Errorf("pod (%v/%v) is not running", ns, staticPodName)
+				}
+				return nil
+			}, f.Timeouts.PodStart, time.Second*5).Should(gomega.Succeed())
+
+			ginkgo.By("restarting the kubelet")
+			nodeutil.RestartKubelet(ctx, true)
+
+			gomega.Eventually(ctx, func() bool {
+				return e2enode.HealthCheck(nodeutil.KubeletHealthCheckURL)
+			}, f.Timeouts.PodStart, f.Timeouts.Poll).Should(gomega.BeTrueBecause("kubelet should be started"))
+
+			ginkgo.By("ensuring that pod is running")
+			gomega.Eventually(ctx, func(ctx context.Context) error {
+				pod, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
+				if err != nil {
+					return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", ns, staticPodName, err)
+				}
+				isReady, err := testutils.PodRunningReady(pod)
+				if err != nil {
+					return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", ns, staticPodName, err)
+				}
+				if !isReady {
+					return fmt.Errorf("pod (%v/%v) is not running", ns, staticPodName)
+				}
+				return nil
+			}, f.Timeouts.PodStart, time.Second*30).Should(gomega.Succeed())
+		})
+	})
+})
+
 func createBasicStaticPodSpec(name, namespace string) *v1.Pod {
 	podSpec := &v1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -558,7 +578,7 @@ func createBasicStaticPodSpec(name, namespace string) *v1.Pod {
 }
 
 func scheduleStaticPod(dir, name, namespace string, podSpec *v1.Pod) error {
-	file := staticPodPath(dir, name, namespace)
+	file := nodeutil.StaticPodPath(dir, name, namespace)
 	f, err := os.OpenFile(file, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err
@@ -645,11 +665,7 @@ func getPodLogsFromStandaloneKubelet(ctx context.Context, podNamespace string, p
 	return string(content), nil
 }
 
-// Decodes the http response from /configz and returns a kubeletconfig.KubeletConfiguration (internal type).
 func decodePods(respBody []byte) (*v1.PodList, error) {
-	// This hack because /pods reports the following structure:
-	// {"kind":"PodList","apiVersion":"v1","metadata":{},"items":[{"metadata":{"name":"kube-dns-autoscaler-758c4689b9-htpqj","generateName":"kube-dns-autoscaler-758c4689b9-",
-
 	var pods v1.PodList
 	err := json.Unmarshal(respBody, &pods)
 	if err != nil {
@@ -658,78 +674,3 @@ func decodePods(respBody []byte) (*v1.PodList, error) {
 
 	return &pods, nil
 }
-
-var _ = SIGDescribe(feature.StandaloneMode, framework.WithSerial(), func() {
-	f := framework.NewDefaultFramework("static-pod-serial")
-	f.NamespacePodSecurityLevel = admissionapi.LevelBaseline
-	ginkgo.Context("when creating a static pod and restarting kubelet", func() {
-		var ns, podPath, staticPodName string
-
-		ginkgo.BeforeEach(func() {
-			ns = f.Namespace.Name
-			staticPodName = "static-pod-" + string(uuid.NewUUID())
-			podPath = kubeletCfg.StaticPodPath
-		})
-
-		ginkgo.AfterEach(func(ctx context.Context) {
-			ginkgo.By(fmt.Sprintf("delete the static pod (%v/%v)", ns, staticPodName))
-			err := deleteStaticPod(podPath, staticPodName, ns)
-			framework.ExpectNoError(err)
-
-			ginkgo.By(fmt.Sprintf("wait for pod to disappear (%v/%v)", ns, staticPodName))
-			gomega.Eventually(ctx, func(ctx context.Context) error {
-				_, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
-
-				if apierrors.IsNotFound(err) {
-					return nil
-				}
-				return fmt.Errorf("pod (%v/%v) still exists", ns, staticPodName)
-			}).Should(gomega.Succeed())
-		})
-
-		ginkgo.It("the pod should be running and kubelet not panic", func(ctx context.Context) {
-			err := scheduleStaticPod(podPath, staticPodName, ns, createBasicStaticPodSpec(staticPodName, ns))
-			framework.ExpectNoError(err)
-
-			ginkgo.By("Waiting for the pod to be running")
-			gomega.Eventually(ctx, func(ctx context.Context) error {
-				pod, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
-				if err != nil {
-					return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", ns, staticPodName, err)
-				}
-
-				isReady, err := testutils.PodRunningReady(pod)
-				if err != nil {
-					return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", ns, staticPodName, err)
-				}
-				if !isReady {
-					return fmt.Errorf("pod (%v/%v) is not running", ns, staticPodName)
-				}
-				return nil
-			}, f.Timeouts.PodStart, time.Second*5).Should(gomega.Succeed())
-
-			ginkgo.By("restarting the kubelet")
-			restartKubelet(ctx, true)
-
-			gomega.Eventually(ctx, func() bool {
-				return e2enode.HealthCheck(kubeletHealthCheckURL)
-			}, f.Timeouts.PodStart, f.Timeouts.Poll).Should(gomega.BeTrueBecause("kubelet should be started"))
-
-			ginkgo.By("ensuring that pod is running")
-			gomega.Eventually(ctx, func(ctx context.Context) error {
-				pod, err := getPodFromStandaloneKubelet(ctx, ns, staticPodName)
-				if err != nil {
-					return fmt.Errorf("error getting pod(%v/%v) from standalone kubelet: %w", ns, staticPodName, err)
-				}
-				isReady, err := testutils.PodRunningReady(pod)
-				if err != nil {
-					return fmt.Errorf("error checking if pod (%v/%v) is running ready: %w", ns, staticPodName, err)
-				}
-				if !isReady {
-					return fmt.Errorf("pod (%v/%v) is not running", ns, staticPodName)
-				}
-				return nil
-			}, f.Timeouts.PodStart, time.Second*30).Should(gomega.Succeed())
-		})
-	})
-})
